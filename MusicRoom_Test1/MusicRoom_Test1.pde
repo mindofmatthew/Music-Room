@@ -37,6 +37,7 @@ void setup()
   }
   
   pixelsPerCell = new int[5][5];
+  minimumZ = new int[5][5];
   activeNote = new boolean[5][5];
 }
 
@@ -54,6 +55,7 @@ void draw() {
   for(int i = 0; i < pixelsPerCell.length; ++i) {
     for(int j = 0; j < pixelsPerCell[i].length; ++j) {
       pixelsPerCell[i][j] = 0;
+      minimumZ[i][j] = 3500;
     }
   }
   
@@ -70,6 +72,7 @@ void draw() {
       //rgbImage.pixels[i] = color(hue(rgbImage.pixels[i]), 255, 255);
       
       pixelsPerCell[x][y] += 1;
+      pixelsPerCell[x][y] = round(min(pixelsPerCell[x][y], depthPoints[i].z));
     } else {
       //color source = rgbImage.pixels[i];
       //rgbImage.pixels[i] = color(hue(source), 0, brightness(source));
@@ -88,7 +91,9 @@ void draw() {
         rect(i * width / 5, j * height / 5, width / 5, height / 5);
         
         if(!activeNote[i][j]) {
-          ciphers[cipherIndex].playNote(pitchSet[i][j], 127, 10);
+          int octave = round(map(minimumZ[i][j], 3000, 1000, -1, 2));
+          
+          ciphers[cipherIndex].playNote(pitchSet[i][j] + octave * 12, 127, 10);
           cipherIndex = (cipherIndex + 1) % ciphers.length;
           activeNote[i][j] = true;
         }
