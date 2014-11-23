@@ -6,14 +6,17 @@ SimpleOpenNI  context;
 int[] blobIndex;
 int numBlobs = 1;
 
-int[] pixelsPerBlob;
-int[] minimumZPerBlob;
-PVector[] minimumZLocation;
-PVector[] centerOfMass;
+LinkedList<PVector>[] blobPixels;
+PVector[] blobCenterOfMass;
+
+LinkedList<Person> people;
 
 SoundCipher[] ciphers;
 int cipherLength = 4;
 int cipherIndex = 0;
+
+int minimumBlobSize = 5000;
+float maxDistance = 200;
 
 int[][] neighborLocation = {{0, -1}, {-1, 0}, {1, 0}, {0, 1}};
 
@@ -24,9 +27,11 @@ void setup()
   // enable depthMap generation 
   context.enableDepth();
   context.enableRGB();
-  context.alternativeViewPointDepthToImage();
+  //context.alternativeViewPointDepthToImage();
   context.setMirror(true);
- 
+  
+  people = new LinkedList<Person>();
+  
   background(0);
   size(context.rgbWidth(), context.rgbHeight()); 
   
@@ -36,89 +41,94 @@ void setup()
   for(int i = 0; i < ciphers.length; ++i) {
     ciphers[i] = new SoundCipher(this);
   }
-  
-  activeNote = new boolean[5][5];
 }
 
 void draw() {
+  background(0);
+  updatePeople();
+  
+  /*for(Person person : people) {
+    fill(person.personColor);
+    ellipse(person.centerOfMass.x, person.centerOfMass.y, 10, 10);
+  }*/
+  
+  for(int i = 0; i < numBlobs; ++i) {
+    if(blobPixels[i].size() > minimumBlobSize) {
+      ellipse(blobCenterOfMass[i].x, blobCenterOfMass[i].y, 10, 10);
+    }
+  }
+}
+
+void updatePeople() {
   blobIndex = new int[context.rgbWidth() * context.rgbHeight()];
   numBlobs = 1;
   
   context.update();
-  PImage rgbImage = context.rgbImage();
   
   PVector[] depthPoints = context.depthMapRealWorld();
   
   for(int i = 0; i < depthPoints.length; i++) {
-    float hue = hue(rgbImage.pixels[i]);
-    float saturation = saturation(rgbImage.pixels[i]);
-    float brightness = brightness(rgbImage.pixels[i]);
-    
     if(depthPoints[i].z > 0 && depthPoints[i].z < 3300) {
       int x = i % 640;
       int y = i / 640;
       
       setBlobIndex(x, y);
-      
-      //pixelsPerCell[x][y] += 1;
-      //pixelsPerCell[x][y] = round(min(pixelsPerCell[x][y], depthPoints[i].z));
-    } else {
-      //rgbImage.pixels[i] = color(0);
     }
   }
   
-  rgbImage.loadPixels();
+  // Set up our per-blob variables
+  blobPixels = new LinkedList[numBlobs];
+  blobCenterOfMass = new PVector[numBlobs];
   
-  pixelsPerBlob = new int[numBlobs];
-  minimumZPerBlob = new int[numBlobs];
-  minimumZLocation = new PVector[numBlobs];
-  centerOfMass = new PVector[numBlobs];
-  
-  int maxArea = 0;
-  
-  for(int i = 0; i < minimumZPerBlob.length; ++i) {
-    minimumZPerBlob[i] = 3500;
-    centerOfMass[i] = new PVector();
+  for(int i = 0; i < numBlobs; ++i) {
+    blobPixels[i] = new LinkedList<PVector>();
+    blobCenterOfMass[i] = new PVector();
   }
   
+  // Now that the dust has settled, go through and count how
+  // many pixels are in each blob
   for(int i = 0; i < blobIndex.length; ++i) {
+    // Ignore the floor
     if(blobIndex[i] > 0) {
-      pixelsPerBlob[blobIndex[i]] += 1;
-      maxArea = max(maxArea, pixelsPerBlob[blobIndex[i]]);
+      int x = i % 640;
+      int y = i / 640;
       
-      float x = i % 640;
-      float y = i / 640;
+      blobPixels[blobIndex[i]].push(new PVector(x, y, depthPoints[i].z));
       
-      centerOfMass[blobIndex[i]].x += x;
-      centerOfMass[blobIndex[i]].y += y;
+      blobCenterOfMass[blobIndex[i]].x += x;
+      blobCenterOfMass[blobIndex[i]].y += y;
+    }
+  }
+  
+  for(int i = 0; i < numBlobs; ++i) {
+    blobCenterOfMass[i].x /= blobPixels[i].size();
+    blobCenterOfMass[i].y /= blobPixels[i].size();
+  }
+  
+  // Now, figure out which people are close to which blobs
+  for(Person person : people) {
+    person.updateFlag = false;
+  }
+  
+  for(int i = 0; i < numBlobs; ++i) {
+    if(blobPixels[i].size() > minimumBlobSize) {
+      Person closestPerson = null;
+      float distance = 1000000;
       
-      minimumZPerBlob[blobIndex[i]] = min(minimumZPerBlob[blobIndex[i]], round(depthPoints[i].z));
-      if(minimumZPerBlob[blobIndex[i]] == round(depthPoints[i].z)) {
-        minimumZLocation[blobIndex[i]] = new PVector(x, y);
+      for(Person person : people) {
+        float newDistance = blobCenterOfMass[i].dist(person.centerOfMass);
+        
+        if(newDistance < distance && newDistance < maxDistance) {
+          distance = newDistance;
+          closestPerson = person;
+        }
       }
-    }
-  }
-  
-  println(maxArea);
-  
-  
-  for(int i = 0; i < blobIndex.length; ++i) {
-    if(blobIndex[i] > 0) {
-      rgbImage.pixels[i] = color(map(pixelsPerBlob[blobIndex[i]], 0, maxArea, 0, 255), 255, 255);
-    }
-  }
-  
-  rgbImage.updatePixels();
-  image(rgbImage, 0, 0);
-  
-  stroke(255);
-  
-  for(int i = 1; i < minimumZLocation.length; ++i) {
-    centerOfMass[i].x /= pixelsPerBlob[i];
-    centerOfMass[i].y /= pixelsPerBlob[i];
-    
-    if(pixelsPerBlob[i] > 50) {
-      ellipse(centerOfMass[i].x, centerOfMass[i].y, 5, 5);
+      
+      if(closestPerson == null) {
+        people.push(new Person(blobCenterOfMass[i], blobPixels[i]));
+      } else {
+        closestPerson.setPixels(blobPixels[i]);
+      }
     }
   }
 }
