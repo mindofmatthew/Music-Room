@@ -1,5 +1,4 @@
 import SimpleOpenNI.*;
-import arb.soundcipher.*;
 
 SimpleOpenNI  context;
 
@@ -10,10 +9,6 @@ LinkedList<PVector>[] blobPixels;
 PVector[] blobCenterOfMass;
 
 LinkedList<Person> people;
-
-SoundCipher[] ciphers;
-int cipherLength = 4;
-int cipherIndex = 0;
 
 int minimumBlobSize = 5000;
 float maxDistance = 200;
@@ -36,30 +31,27 @@ void setup()
   size(context.rgbWidth(), context.rgbHeight()); 
   
   colorMode(HSB);
-  
-  ciphers = new SoundCipher[cipherLength];
-  for(int i = 0; i < ciphers.length; ++i) {
-    ciphers[i] = new SoundCipher(this);
-  }
 }
 
 void draw() {
   background(0);
   updatePeople();
   
-  /*for(Person person : people) {
+  for(Person person : people) {
+    person.playNote();
+    
+    stroke(255);
+    PVector offset = new PVector();
+    offset = offset.sub(person.centerOfMass, person.velocity);
+    line(person.centerOfMass.x, person.centerOfMass.y, offset.x, offset.y);
+    noStroke();
     fill(person.personColor);
     ellipse(person.centerOfMass.x, person.centerOfMass.y, 10, 10);
-  }*/
-  
-  for(int i = 0; i < numBlobs; ++i) {
-    if(blobPixels[i].size() > minimumBlobSize) {
-      ellipse(blobCenterOfMass[i].x, blobCenterOfMass[i].y, 10, 10);
-    }
   }
 }
 
 void updatePeople() {
+  // Reset blobIndex array
   blobIndex = new int[context.rgbWidth() * context.rgbHeight()];
   numBlobs = 1;
   
@@ -68,7 +60,7 @@ void updatePeople() {
   PVector[] depthPoints = context.depthMapRealWorld();
   
   for(int i = 0; i < depthPoints.length; i++) {
-    if(depthPoints[i].z > 0 && depthPoints[i].z < 3300) {
+    if(depthPoints[i].z > 0 && depthPoints[i].z < 3300) {  // add check for IR brightness to include IR reflector tag
       int x = i % 640;
       int y = i / 640;
       
@@ -125,10 +117,17 @@ void updatePeople() {
       }
       
       if(closestPerson == null) {
-        people.push(new Person(blobCenterOfMass[i], blobPixels[i]));
+        people.push(new Person(this, blobCenterOfMass[i], blobPixels[i]));
       } else {
+        closestPerson.setCenterOfMass(blobCenterOfMass[i]);
         closestPerson.setPixels(blobPixels[i]);
       }
+    }
+  }
+  
+  for(Person person : people) { // Fix concurrency error
+    if(!person.updateFlag) {
+      people.remove(person);
     }
   }
 }
