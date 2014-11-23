@@ -49,8 +49,8 @@ void draw() {
   
   PVector[] depthPoints = context.depthMapRealWorld();
   
-  PVector mousePoint = depthPoints[mouseY * width + mouseX];
-  println(mousePoint.z);
+  color mousePoint = rgbImage.pixels[mouseY * width + mouseX];
+  println(map(mouseY, 0, height, 0, 255));
   
   for(int i = 0; i < pixelsPerCell.length; ++i) {
     for(int j = 0; j < pixelsPerCell[i].length; ++j) {
@@ -64,19 +64,24 @@ void draw() {
     float saturation = saturation(rgbImage.pixels[i]);
     float brightness = brightness(rgbImage.pixels[i]);
     
-    if(depthPoints[i].z > 0 && depthPoints[i].z < 3300) {
+    //if(depthPoints[i].z > 0 && depthPoints[i].z < 3300) {
     //if(hue >= 37 && hue <= 42 && saturation > 60 && brightness > 60) {
+    if(brightness > map(mouseY, 0, height, 0, 255)) {
       int x = (i % context.rgbWidth()) / (context.rgbWidth() / 5);
       int y = (i / context.rgbHeight()) / (context.rgbWidth() / 5);
       
       //rgbImage.pixels[i] = color(hue(rgbImage.pixels[i]), 255, 255);
       
+      if(depthPoints[i].z > 0 && depthPoints[i].z < 3300) {
+        rgbImage.pixels[i] = color(0, 255, 255);
+      }
+      
       pixelsPerCell[x][y] += 1;
       pixelsPerCell[x][y] = round(min(pixelsPerCell[x][y], depthPoints[i].z));
     } else {
-      //color source = rgbImage.pixels[i];
-      //rgbImage.pixels[i] = color(hue(source), 0, brightness(source));
-      rgbImage.pixels[i] = color(0);
+      color source = rgbImage.pixels[i];
+      rgbImage.pixels[i] = color(hue(source), 0, brightness(source));
+      //rgbImage.pixels[i] = color(0);
     }
   }
   

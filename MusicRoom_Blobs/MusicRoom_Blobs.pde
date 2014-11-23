@@ -9,6 +9,7 @@ int numBlobs = 1;
 float[][] pitchSet = {{48, 50, 52, 53, 55}, {57, 59, 60,62,64},{65,67, 69, 71,72}, {74, 76, 79,81,83}, {57, 59, 60,62,64}};
 int[] pixelsPerBlob;
 int[] minimumZPerBlob;
+PVector[] minimumZLocation;
 boolean[][] activeNote;
 
 SoundCipher[] ciphers;
@@ -71,6 +72,7 @@ void draw() {
   
   pixelsPerBlob = new int[numBlobs];
   minimumZPerBlob = new int[numBlobs];
+  minimumZLocation = new PVector[numBlobs];
   
   int maxArea = 0;
   
@@ -84,6 +86,9 @@ void draw() {
       maxArea = max(maxArea, pixelsPerBlob[blobIndex[i]]);
       
       minimumZPerBlob[blobIndex[i]] = min(minimumZPerBlob[blobIndex[i]], round(depthPoints[i].z));
+      if(minimumZPerBlob[blobIndex[i]] == round(depthPoints[i].z)) {
+        minimumZLocation[blobIndex[i]] = new PVector(i % 640, i / 640);
+      }
     }
   }
   
@@ -92,13 +97,21 @@ void draw() {
   
   for(int i = 0; i < blobIndex.length; ++i) {
     if(blobIndex[i] > 0) {
-      rgbImage.pixels[i] = color(map(minimumZPerBlob[blobIndex[i]], 1000, 3000, 0, 255), 255, 255);
-      //rgbImage.pixels[i] = color(map(minimumZPerBlob[blobIndex[i]], 0, maxArea, 0, 255), 255, 255);
+      //rgbImage.pixels[i] = color(map(minimumZPerBlob[blobIndex[i]], 1000, 3000, 0, 255), 255, 255);
+      rgbImage.pixels[i] = color(map(pixelsPerBlob[blobIndex[i]], 0, maxArea, 0, 255), 255, 255);
     }
   }
   
   rgbImage.updatePixels();
   image(rgbImage, 0, 0);
+  
+  stroke(255);
+  
+  for(int i = 1; i < minimumZLocation.length; ++i) {
+    if(minimumZLocation[i] != null && pixelsPerBlob[i] > 20) {
+      ellipse(minimumZLocation[i].x, minimumZLocation[i].y, 5, 5);
+    }
+  }
   
   /*for(int i = 0; i < pixelsPerCell.length; ++i) {
     for(int j = 0; j < pixelsPerCell[i].length; ++j) {
