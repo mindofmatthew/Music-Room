@@ -8,6 +8,8 @@ class Person {
   PVector velocity = new PVector();
   
   boolean updateFlag = true;
+
+  boolean hasFlag = false; // Person has IR reflecting token/flag/armband/whatever it is.
   
   color personColor;
   
@@ -15,9 +17,10 @@ class Person {
   
   SoundCipher cipher;
   
-  Person(PApplet parent, PVector centerOfMass, LinkedList<PVector> containedPixels) {
+  Person(PApplet parent, PVector centerOfMass, LinkedList<PVector> containedPixels, boolean hasFlag) {
     this.containedPixels = containedPixels;
     this.centerOfMass = centerOfMass;
+    this.hasFlag = hasFlag;
     
     cipher = new SoundCipher(parent);
     
