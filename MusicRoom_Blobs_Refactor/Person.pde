@@ -7,6 +7,15 @@ class Person {
   
   PVector velocity = new PVector();
   
+  
+  PVector minCorner = new PVector();
+  PVector maxCorner = new PVector();
+   PVector boundBoxSides = new PVector();
+  float boundBoxRatio = 0;
+  float boundBoxArea = 0;
+  float lastBoundBoxRatio = 0;
+  float lastBoundBoxArea = 0;  
+  
   boolean updateFlag = true;
 
   boolean hasFlag = false; // Person has IR reflecting token/flag/armband/whatever it is.
@@ -17,11 +26,17 @@ class Person {
   
   SoundCipher cipher;
   
-  Person(PApplet parent, PVector centerOfMass, LinkedList<PVector> containedPixels, boolean hasFlag) {
+  Person(PApplet parent, PVector centerOfMass, LinkedList<PVector> containedPixels, boolean hasFlag, int minX, int minY, int maxX, int maxY) {
     this.containedPixels = containedPixels;
     this.centerOfMass = centerOfMass;
     this.hasFlag = hasFlag;
-    
+    this.minCorner = new PVector(minX, minY);
+    this.maxCorner = new PVector(maxX, maxY);
+    int xside = maxX-minX;
+    int yside = maxY-minY;
+    this.boundBoxSides = new PVector(xside, yside);
+    this.boundBoxArea = xside*yside;
+    this.boundBoxRatio = xside/yside;
     cipher = new SoundCipher(parent);
     
     colorMode(HSB);
@@ -45,5 +60,18 @@ class Person {
     
     // update bounding box
     // update height
+  }
+  
+  void setBoundingBox(int minX, int minY, int maxX, int maxY) {
+    this.lastBoundBoxArea = this.boundBoxArea;
+    this.lastBoundBoxRatio = this.boundBoxRatio;
+    
+    this.minCorner = new PVector(minX, minY);
+    this.maxCorner = new PVector(maxX, maxY);
+    int xside = maxX-minX;
+    int yside = maxY-minY;
+    this.boundBoxSides = new PVector(xside, yside);
+    this.boundBoxArea = xside*yside;
+    this.boundBoxRatio = xside/yside;
   }
 }

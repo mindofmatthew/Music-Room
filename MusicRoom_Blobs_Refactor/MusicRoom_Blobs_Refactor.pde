@@ -11,6 +11,7 @@ int numBlobs = 1;
 LinkedList<PVector>[] blobPixels;  // Array of linkedlists, each containing all pixels for a given blob
 PVector[] blobCenterOfMass;    // All of vectors with the x,y of center of mass for each blob
 boolean[] blobHasFlag;     // true for each blob which contains IR reflector token/flag/marker
+int[] blobMinX;  int[] blobMinY;  int[] blobMaxX;  int[] blobMaxY;  // used to compute bounding box corners
 
 LinkedList<Person> people;
 
@@ -58,7 +59,8 @@ void draw() {
     stroke(255);
     PVector offset = new PVector();
     offset = offset.sub(person.centerOfMass, person.velocity);
-    line(person.centerOfMass.x, person.centerOfMass.y, offset.x, offset.y);
+    line(person.centerOfMass.x, person.centerOfMass.y, offset.x, offset.y);    // draw velocity vector
+    rect(person.minCorner.x, person.minCorner.y, person.maxCorner.x, person.maxCorner.y); // draw bounding box
     noStroke();
     fill(person.personColor);
     ellipse(person.centerOfMass.x, person.centerOfMass.y, 10, 10);
@@ -95,31 +97,48 @@ void updatePeople() {
   blobPixels = new LinkedList[numBlobs];
   blobCenterOfMass = new PVector[numBlobs];
   blobHasFlag = new boolean[numBlobs];
+  blobMinX = new int[numBlobs];          // used to compute bounding box corners
+  blobMinY = new int[numBlobs];
+  blobMaxX = new int[numBlobs];
+  blobMaxY = new int[numBlobs];
+  
   
   for(int i = 0; i < numBlobs; ++i) {
     blobPixels[i] = new LinkedList<PVector>();
     blobCenterOfMass[i] = new PVector();
+    blobMinX[i] = 10000; blobMinY[i]=10000;
+    blobMaxX[i] = 0; blobMaxY[i]=0;
+
   }
   
   // Now that the dust has settled, go through and count how
   // many pixels are in each blob
   for(int i = 0; i < blobIndex.length; ++i) {
+
     
     // Ignore the floor
     if(blobIndex[i] > 0) {
       int x = i % camWidth;
       int y = i / camWidth;
       
+      // update bounding box corner coordinates
+      if (x < blobMinX[blobIndex[i]]) { blobMinX[blobIndex[i]]=x; }
+      if (x > blobMaxX[blobIndex[i]]) { blobMaxX[blobIndex[i]]=x; }
+      if (y < blobMinY[blobIndex[i]]) { blobMinY[blobIndex[i]]=y; }
+      if (y > blobMaxY[blobIndex[i]]) { blobMaxY[blobIndex[i]]=y; }
+      
       blobPixels[blobIndex[i]].push(new PVector(x, y, depthPoints[i].z));
       if (brightness(irPixels[i])>80) { // this pixel is probably an IR reflecting flag
         blobHasFlag[blobIndex[i]] = true;
       }
       
-      blobCenterOfMass[blobIndex[i]].x += x;
+      // sum x and y of all points, to computer center of mass
+      blobCenterOfMass[blobIndex[i]].x += x;   
       blobCenterOfMass[blobIndex[i]].y += y;
     }
   }
   
+  // find center of mass as average x and y of all points in blob
   for(int i = 0; i < numBlobs; ++i) {
     blobCenterOfMass[i].x /= blobPixels[i].size();
     blobCenterOfMass[i].y /= blobPixels[i].size();
@@ -145,10 +164,11 @@ void updatePeople() {
       }
       
       if(closestPerson == null) {
-        people.push(new Person(this, blobCenterOfMass[i], blobPixels[i], blobHasFlag[i]));
+        people.push(new Person(this, blobCenterOfMass[i], blobPixels[i], blobHasFlag[i], blobMinX[i], blobMinY[i], blobMaxX[i], blobMaxY[i]));
       } else {
         closestPerson.setCenterOfMass(blobCenterOfMass[i]);
         closestPerson.setPixels(blobPixels[i]);
+        closestPerson.setBoundingBox(blobMinX[i], blobMinY[i], blobMaxX[i], blobMaxY[i]);
       }
     }
   }
