@@ -14,6 +14,7 @@ boolean[] blobHasFlag;     // true for each blob which contains IR reflector tok
 int[] blobMinX;  int[] blobMinY;  int[] blobMaxX;  int[] blobMaxY;  // used to compute bounding box corners
 
 LinkedList<Person> people;
+LinkedList<Person> keep_people;
 
 int minimumBlobSize = 5000;
 float maxDistance = 200;
@@ -41,17 +42,29 @@ println("width = "+context.depthWidth()+ " height="+context.depthHeight());
   context.setMirror(true);
   
   people = new LinkedList<Person>();
+    keep_people = new LinkedList<Person>();
+
   
   background(0);
  
   size(camWidth,camHeight);
   
   colorMode(HSB);
+  rectMode(CORNERS);
 }
 
 void draw() {
   background(0);
   updatePeople();
+  //println("Num blobs = "+numBlobs);
+  
+  PImage personImage = new PImage(camWidth, camHeight);
+  
+  for(Person person : people) {
+    personImage = person.drawPerson(personImage);
+  }
+  
+  image(personImage, 0, 0);
   
   for(Person person : people) {
     person.playNote();
@@ -60,6 +73,7 @@ void draw() {
     PVector offset = new PVector();
     offset = offset.sub(person.centerOfMass, person.velocity);
     line(person.centerOfMass.x, person.centerOfMass.y, offset.x, offset.y);    // draw velocity vector
+    noFill();
     rect(person.minCorner.x, person.minCorner.y, person.maxCorner.x, person.maxCorner.y); // draw bounding box
     noStroke();
     fill(person.personColor);
@@ -68,6 +82,7 @@ void draw() {
       textSize(24);
       text("hasFlag", person.centerOfMass.x, person.centerOfMass.y);
     }
+    //person.draw();
   }
 }
 
@@ -175,9 +190,14 @@ void updatePeople() {
   
   for(Person person : people) { // Fix concurrency error
     if(!person.updateFlag) {
-      people.remove(person);
+//      keep_people.push(person);
+        people.remove(person);
     }
-  }
+  }  
+//  people = keep_people;
+//  keep_people = new LinkedList<Person>();
+  
+  
 }
 
 // Figure out what the blob index should be for a single pixel
