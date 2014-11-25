@@ -10,7 +10,7 @@ int numBlobs = 1;
 
 LinkedList<PVector>[] blobPixels;  // Array of linkedlists, each containing all pixels for a given blob
 PVector[] blobCenterOfMass;    // All of vectors with the x,y of center of mass for each blob
-boolean[] blobHasFlag;     // true for each blob which contains IR reflector token/flag/marker
+int[] blobHasFlag;     // true for each blob which contains IR reflector token/flag/marker
 int[] blobMinX;  int[] blobMinY;  int[] blobMaxX;  int[] blobMaxY;  // used to compute bounding box corners
 
 LinkedList<Person> people;
@@ -111,7 +111,7 @@ void updatePeople() {
   // Set up our per-blob variables
   blobPixels = new LinkedList[numBlobs];
   blobCenterOfMass = new PVector[numBlobs];
-  blobHasFlag = new boolean[numBlobs];
+  blobHasFlag = new int[numBlobs];
   blobMinX = new int[numBlobs];          // used to compute bounding box corners
   blobMinY = new int[numBlobs];
   blobMaxX = new int[numBlobs];
@@ -143,8 +143,8 @@ void updatePeople() {
       if (y > blobMaxY[blobIndex[i]]) { blobMaxY[blobIndex[i]]=y; }
       
       blobPixels[blobIndex[i]].push(new PVector(x, y, depthPoints[i].z));
-      if (brightness(irPixels[i])>80) { // this pixel is probably an IR reflecting flag
-        blobHasFlag[blobIndex[i]] = true;
+      if (brightness(irPixels[i])>90) { // this pixel is probably an IR reflecting flag
+        blobHasFlag[blobIndex[i]] += 1;
       }
       
       // sum x and y of all points, to computer center of mass
@@ -184,6 +184,7 @@ void updatePeople() {
         closestPerson.setCenterOfMass(blobCenterOfMass[i]);
         closestPerson.setPixels(blobPixels[i]);
         closestPerson.setBoundingBox(blobMinX[i], blobMinY[i], blobMaxX[i], blobMaxY[i]);
+        closestPerson.setHasFlag(blobHasFlag[i]);
       }
     }
   }

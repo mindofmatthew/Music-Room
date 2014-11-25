@@ -26,10 +26,10 @@ class Person {
   
   SoundCipher cipher;
   
-  Person(PApplet parent, PVector centerOfMass, LinkedList<PVector> containedPixels, boolean hasFlag, int minX, int minY, int maxX, int maxY) {
+  Person(PApplet parent, PVector centerOfMass, LinkedList<PVector> containedPixels, int hasFlag, int minX, int minY, int maxX, int maxY) {
     this.containedPixels = containedPixels;
     this.centerOfMass = centerOfMass;
-    this.hasFlag = hasFlag;
+    this.hasFlag = hasFlag>60;
     this.minCorner = new PVector(minX, minY);
     this.maxCorner = new PVector(maxX, maxY);
     int xside = maxX-minX;
@@ -73,6 +73,10 @@ class Person {
     this.boundBoxSides = new PVector(xside, yside);
     this.boundBoxArea = xside*yside;
     this.boundBoxRatio = xside/yside;
+  }
+  
+  void setHasFlag(int hasFlag) {
+    this.hasFlag = (hasFlag>60);
   }
   
   PImage drawPerson(PImage image) {
