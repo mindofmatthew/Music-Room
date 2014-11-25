@@ -82,7 +82,6 @@ void draw() {
       textSize(24);
       text("hasFlag", person.centerOfMass.x, person.centerOfMass.y);
     }
-    //person.draw();
   }
 }
 
@@ -189,14 +188,14 @@ void updatePeople() {
     }
   }
   
-  for(Person person : people) { // Fix concurrency error
-    if(!person.updateFlag) {
-//      keep_people.push(person);
-        people.remove(person);
+  // remove people who no longer exist, by making copy of list with only people who still exist
+  for(Person person : people) { 
+    if(person.updateFlag) {
+      keep_people.push(person);
     }
   }  
-//  people = keep_people;
-//  keep_people = new LinkedList<Person>();
+  people = keep_people;
+  keep_people = new LinkedList<Person>();
   
   
 }
