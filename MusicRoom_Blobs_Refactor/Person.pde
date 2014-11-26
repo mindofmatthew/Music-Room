@@ -16,6 +16,7 @@ class Person {
   float lastBoundBoxRatio = 0;
   float lastBoundBoxArea = 0;  
   
+  
   boolean updateFlag = true;
 
   boolean hasFlag = false; // Person has IR reflecting token/flag/armband/whatever it is.
@@ -25,6 +26,7 @@ class Person {
   float[][] pitchSet = {{48, 50, 52, 53, 55}, {57, 59, 60,62,64}, {65,67, 69, 71,72}, {74, 76, 79,81,83}, {57, 59, 60,62,64}};
   
   SoundCipher cipher;
+  double instrument;
   
   Person(PApplet parent, PVector centerOfMass, LinkedList<PVector> containedPixels, int hasFlag, int minX, int minY, int maxX, int maxY) {
     this.containedPixels = containedPixels;
@@ -37,15 +39,37 @@ class Person {
     this.boundBoxSides = new PVector(xside, yside);
     this.boundBoxArea = xside*yside;
     this.boundBoxRatio = xside/yside;
-    cipher = new SoundCipher(parent);
+    this.cipher = new SoundCipher(parent);
+    cipher.tempo(60);  // this should be able to change or something
+    this.instrument = floor(map(minCorner.x, 0, camWidth,0,127));
     
     colorMode(HSB);
     personColor = color(round(random(255)), 255, 255);
   }
   
+  /* Here's where the magic happens; at least until we decide to make this event driven, or use minim */
   void playNote() {
-    if(velocity.magSq() > 100) {
-      cipher.playNote(pitchSet[floor(centerOfMass.x / 128)][floor(centerOfMass.y / 96)], 127, 10);
+    double boxRatioChange = abs(boundBoxRatio-lastBoundBoxRatio);
+    float boxAreaChange = abs(boundBoxArea-lastBoundBoxArea);
+   double boxChange = max(boxAreaChange/2,velocity.magSq());
+    if(boxChange > 25) {  // what's the right threshhold here?
+      double startBeat = 0;
+      double channel = 0;
+//      double instrument = map(containedPixels.size(), minimumBlobSize, 20000, 0, 127); 
+      double pitch = pitchSet[floor(centerOfMass.x / 128)][floor(centerOfMass.y / 96)];
+      double dynamic = min(map(boundBoxArea,0,480*480, 40,127),127);  //map(velocity.magSq(), 0, 320, 80, 127);  
+      double duration = 4;
+      double articulation = boundBoxRatio; // 0.8;
+      double pan = map(centerOfMass.x,0,camWidth,0,127);
+      cipher.playNote(startBeat,
+                     channel,
+                      instrument,
+                      pitch,
+                      dynamic,
+                      duration,
+                      articulation,
+                      pan);
+     // cipher.playNote(pitchSet[floor(centerOfMass.x / 128)][floor(centerOfMass.y / 96)], 127, 10);
     }
   }
   

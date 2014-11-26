@@ -80,7 +80,7 @@ void draw() {
     ellipse(person.centerOfMass.x, person.centerOfMass.y, 10, 10);
     if (person.hasFlag) { 
       textSize(24);
-      text("hasFlag", person.centerOfMass.x, person.centerOfMass.y);
+      text(person.instrument+" : "+person.boundBoxArea, person.centerOfMass.x, person.centerOfMass.y);
     }
   }
 }
