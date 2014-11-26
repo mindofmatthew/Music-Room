@@ -17,7 +17,22 @@ class Person {
   float lastBoundBoxRatio = 0;
   float lastBoundBoxArea = 0;  
   
-  
+  // used to calculate moving averages
+  float bbRatioAvg = 0;
+  float bbAreaAvg = 0;
+  float centerXAvg=0;
+  float centerYAvg = 0;
+  float velocitySqAvg = 0;
+  float heightAvg = 0;
+  float smoothingFactor = 0.01; // dunno what this should be
+
+  float movingAverage(float workingAverage, float newValue) {
+    if (workingAverage == 0) return newValue;
+//    if (abs(newValue - workingAverage) > 50) { 
+//        newValue = workingAverage;
+//    }
+    return ((newValue*smoothingFactor) + ( workingAverage * ( 1.0 - smoothingFactor) ));
+  } 
   boolean updateFlag = true;
 
   boolean hasFlag = false; // Person has IR reflecting token/flag/armband/whatever it is.
@@ -50,11 +65,15 @@ class Person {
   }
   
   /* Here's where the magic happens; at least until we decide to make this event driven, or use minim */
+  int playTimer = 0;
   void playNote() {
 //    double boxRatioChange = abs(boundBoxRatio-lastBoundBoxRatio);
 //    float boxAreaChange = abs(boundBoxArea-lastBoundBoxArea);
 //   double boxChange = max(boxAreaChange/2,velocity.magSq());
-    if(velocity.magSq() > 50) {  // what's the right threshhold here?
+
+    if((velocity.magSq() > 25) && // start if we've moved; what's the right threshhold here?
+       (millis()-playTimer > 1000))  {  // but only if last time note started was more than a second ago
+      playTimer=millis();
       double startBeat = 0;
       double channel = 0;
 //      double instrument = map(containedPixels.size(), minimumBlobSize, 20000, 0, 127); 
@@ -75,9 +94,16 @@ class Person {
     }
   }
   
+  int centerChangeTimer = millis();  // used to know if we're still for a certain period of time
   void setCenterOfMass(PVector centerOfMass) {
     velocity = velocity.sub(centerOfMass, this.centerOfMass);
+    if (velocity.magSq() > 10) { // don't know what threshold should be
+      centerChangeTimer = millis();  // record time of last significant change in location
+    }
     this.centerOfMass = centerOfMass;
+    centerXAvg = (centerOfMass.x*smoothingFactor) + ( centerXAvg * ( 1.0 - smoothingFactor) );
+    centerYAvg = movingAverage(centerYAvg, centerOfMass.y);
+    velocitySqAvg = movingAverage(velocitySqAvg, velocity.magSq());
   }
   
   void setPixels(LinkedList<PVector> containedPixels) {
@@ -88,11 +114,13 @@ class Person {
     // update height
   }
   
-  int minz = 0;
+  int minZ = 0;
   
   void setHighestPoint(int minZ,PVector highpoint) {
     this.highestPoint = highpoint;
-    this.minz = minZ;
+    this.minZ = minZ;
+    this.heightAvg = (minZ*smoothingFactor) + ( heightAvg * ( 1.0 - smoothingFactor) );
+    
   }
   
   void setBoundingBox(int minX, int minY, int maxX, int maxY) {
@@ -105,6 +133,7 @@ class Person {
     int yside = maxY-minY;
     this.boundBoxSides = new PVector(xside, yside);
     this.boundBoxArea = xside*yside;
+    bbAreaAvg = movingAverage(bbAreaAvg, boundBoxArea);
     this.boundBoxRatio = xside/yside;
   }
   
@@ -122,4 +151,6 @@ class Person {
     image.updatePixels();
     return image;
   }
+  
+ 
 }

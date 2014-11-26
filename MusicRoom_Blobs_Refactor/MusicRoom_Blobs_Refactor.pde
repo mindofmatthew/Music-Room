@@ -81,8 +81,9 @@ void draw() {
     fill(person.personColor);
     ellipse(person.centerOfMass.x, person.centerOfMass.y, 10, 10);
     if (person.hasFlag) { 
-      textSize(24);
-      text(person.instrument+" : "+person.minz, person.centerOfMass.x, person.centerOfMass.y);
+      textSize(32);
+      //text(person.bbAreaAvg+" : "+person.heightAvg, person.centerOfMass.x, person.centerOfMass.y);
+      text(person.centerChangeTimer, person.centerOfMass.x, person.centerOfMass.y);
     }
   }
 }
