@@ -9,14 +9,15 @@ class Person {
   
   PVector velocity = new PVector();
   
+  PVector highestPoint = new PVector();
+  
   PVector minCorner = new PVector();
   PVector maxCorner = new PVector();
   PVector boundBoxSides = new PVector();
   float boundBoxRatio = 0;
   float boundBoxArea = 0;
   float lastBoundBoxRatio = 0;
-  float lastBoundBoxArea = 0;  
-  
+  float lastBoundBoxArea = 0;
   
   boolean updateFlag = true;
 
@@ -33,6 +34,7 @@ class Person {
   Line bend;
   
   boolean currentNote = false;
+  int timeOfAttack = 0;
   
   Person(AudioOutput output, PVector centerOfMass, LinkedList<PVector> containedPixels, int hasFlag, int minX, int minY, int maxX, int maxY) {
     this.containedPixels = containedPixels;
@@ -89,9 +91,16 @@ class Person {
     float frequency = pow(2, (pitch - 69) / 12) * 440;
     waveform.setFrequency(frequency);
     
-    waveform.setAmplitude(constrain(map(boundBoxArea, 30000, 100000, 0, 2), 0, 2));
+    waveform.setAmplitude(constrain(map(boundBoxArea, 50000, 100000, 1, 2), 1, 2));
     
-    if((boundBoxArea > 30000) && !currentNote) {
+    if(boundBoxArea > 50000) {
+      timeOfAttack = millis();
+    }
+    
+    boolean onCondition = (velocity.magSq() > 10) || (boundBoxArea - lastBoundBoxArea > 2000);
+    boolean offCondition = millis() - timeOfAttack > 200;
+    
+    if(onCondition && !currentNote) {
       println("Note On");
       println("Area: " + boundBoxArea);
       envelope.noteOn();
@@ -101,7 +110,9 @@ class Person {
         bend.setEndAmp(frequency);
         bend.activate();
       }
-    } else if((boundBoxArea < 30000) && currentNote) {
+      
+      timeOfAttack = millis();
+    } else if(offCondition && currentNote) {
       println("Note Off");
       envelope.noteOff();
       currentNote = false;
@@ -118,19 +129,26 @@ class Person {
     updateFlag = true;
   }
   
+  int minz = 0;
+  
+  void setHighestPoint(int minZ,PVector highpoint) {
+    this.highestPoint = highpoint;
+    this.minz = minZ;
+  }
+  
   void setBoundingBox(int minX, int minY, int maxX, int maxY) {
     this.lastBoundBoxArea = this.boundBoxArea;
     this.lastBoundBoxRatio = this.boundBoxRatio;
     
     this.minCorner = new PVector(minX, minY);
     this.maxCorner = new PVector(maxX, maxY);
-    int xside = maxX-minX;
-    int yside = maxY-minY;
+    int xside = maxX - minX;
+    int yside = maxY - minY;
     this.boundBoxSides = new PVector(xside, yside);
     this.boundBoxArea = xside*yside;
     this.boundBoxRatio = xside/yside;
   }
-  
+ 
   void setHasFlag(int hasFlag) {
     this.hasFlag = (hasFlag>60);
   }
