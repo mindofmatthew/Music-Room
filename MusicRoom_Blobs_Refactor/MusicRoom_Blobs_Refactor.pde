@@ -12,6 +12,8 @@ LinkedList<PVector>[] blobPixels;  // Array of linkedlists, each containing all 
 PVector[] blobCenterOfMass;    // All of vectors with the x,y of center of mass for each blob
 int[] blobHasFlag;     // true for each blob which contains IR reflector token/flag/marker
 int[] blobMinX;  int[] blobMinY;  int[] blobMaxX;  int[] blobMaxY;  // used to compute bounding box corners
+int[] minimumZPerBlob;  // highest point in blob
+PVector[] minimumZLocation;  // 3d location of highest point in blob
 
 LinkedList<Person> people;
 LinkedList<Person> keep_people;
@@ -80,7 +82,7 @@ void draw() {
     ellipse(person.centerOfMass.x, person.centerOfMass.y, 10, 10);
     if (person.hasFlag) { 
       textSize(24);
-      text(person.instrument+" : "+person.boundBoxArea, person.centerOfMass.x, person.centerOfMass.y);
+      text(person.instrument+" : "+person.minz, person.centerOfMass.x, person.centerOfMass.y);
     }
   }
 }
@@ -115,17 +117,21 @@ void updatePeople() {
   blobMinY = new int[numBlobs];
   blobMaxX = new int[numBlobs];
   blobMaxY = new int[numBlobs];
+    minimumZPerBlob = new int[numBlobs];
+  minimumZLocation = new PVector[numBlobs];
   
-  
+  // initialize those lists
   for(int i = 0; i < numBlobs; ++i) {
     blobPixels[i] = new LinkedList<PVector>();
     blobCenterOfMass[i] = new PVector();
+    minimumZLocation[i] = new PVector();
     blobMinX[i] = 10000; blobMinY[i]=10000;
-    blobMaxX[i] = 0; blobMaxY[i]=0;
+//    blobMaxX[i] = 0; blobMaxY[i]=0;  // not necessary because int arrays initialize to all zeros
+        minimumZPerBlob[i] = 3500;
 
   }
   
-  // Now that the dust has settled, go through and count how
+  // Now that the dust has settled, go through all pixels in image and count how
   // many pixels are in each blob
   for(int i = 0; i < blobIndex.length; ++i) {
 
@@ -149,6 +155,17 @@ void updatePeople() {
       // sum x and y of all points, to computer center of mass
       blobCenterOfMass[blobIndex[i]].x += x;   
       blobCenterOfMass[blobIndex[i]].y += y;
+      
+      // look at depth of pixel, and set as min Z for the blob if this is lower than min 
+      int z = round(depthPoints[i].z);
+      if (z>10 && z < minimumZPerBlob[blobIndex[i]]) {
+        minimumZPerBlob[blobIndex[i]] = z;
+                minimumZLocation[blobIndex[i]] = new PVector(x, y,z);
+      }
+//      minimumZPerBlob[blobIndex[i]] = min(minimumZPerBlob[blobIndex[i]], round(depthPoints[i].z));
+//      if(minimumZPerBlob[blobIndex[i]] == round(depthPoints[i].z)) {
+//        minimumZLocation[blobIndex[i]] = new PVector(x, y,depthPoints[i].z);
+//      }
     }
   }
   
@@ -178,12 +195,16 @@ void updatePeople() {
       }
       
       if(closestPerson == null) {
-        people.push(new Person(this, blobCenterOfMass[i], blobPixels[i], blobHasFlag[i], blobMinX[i], blobMinY[i], blobMaxX[i], blobMaxY[i]));
+        Person p = new Person(this, blobCenterOfMass[i], blobPixels[i], blobHasFlag[i], blobMinX[i], blobMinY[i], blobMaxX[i], blobMaxY[i]);
+        p.setHighestPoint(minimumZPerBlob[i],minimumZLocation[i]);
+        people.push(p);
+        
       } else {
         closestPerson.setCenterOfMass(blobCenterOfMass[i]);
         closestPerson.setPixels(blobPixels[i]);
         closestPerson.setBoundingBox(blobMinX[i], blobMinY[i], blobMaxX[i], blobMaxY[i]);
         closestPerson.setHasFlag(blobHasFlag[i]);
+        closestPerson.setHighestPoint(minimumZPerBlob[i],minimumZLocation[i]);
       }
     }
   }

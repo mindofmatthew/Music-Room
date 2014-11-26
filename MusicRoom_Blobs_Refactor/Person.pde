@@ -7,6 +7,7 @@ class Person {
   
   PVector velocity = new PVector();
   
+  PVector highestPoint = new PVector();
   
   PVector minCorner = new PVector();
   PVector maxCorner = new PVector();
@@ -23,7 +24,8 @@ class Person {
   
   color personColor;
   
-  float[][] pitchSet = {{48, 50, 52, 53, 55}, {57, 59, 60,62,64}, {65,67, 69, 71,72}, {74, 76, 79,81,83}, {57, 59, 60,62,64}};
+  //float[][] pitchSet = {{48, 50, 52, 53, 55}, {57, 59, 60,62,64}, {65,67, 69, 71,72}, {74, 76, 79,81,83}, {57, 59, 60,62,64}};
+  float[][] pitchSet = {{48, 50, 52, 53},{55, 57, 59,60},{62,64,65,67},{69,71,72,74},{76, 79,81,83}};
   
   SoundCipher cipher;
   double instrument;
@@ -40,7 +42,7 @@ class Person {
     this.boundBoxArea = xside*yside;
     this.boundBoxRatio = xside/yside;
     this.cipher = new SoundCipher(parent);
-    cipher.tempo(60);  // this should be able to change or something
+    cipher.tempo(120);  // this should be able to change or something
     this.instrument = floor(map(minCorner.x, 0, camWidth,0,127));
     
     colorMode(HSB);
@@ -49,16 +51,16 @@ class Person {
   
   /* Here's where the magic happens; at least until we decide to make this event driven, or use minim */
   void playNote() {
-    double boxRatioChange = abs(boundBoxRatio-lastBoundBoxRatio);
-    float boxAreaChange = abs(boundBoxArea-lastBoundBoxArea);
-   double boxChange = max(boxAreaChange/2,velocity.magSq());
-    if(boxChange > 25) {  // what's the right threshhold here?
+//    double boxRatioChange = abs(boundBoxRatio-lastBoundBoxRatio);
+//    float boxAreaChange = abs(boundBoxArea-lastBoundBoxArea);
+//   double boxChange = max(boxAreaChange/2,velocity.magSq());
+    if(velocity.magSq() > 50) {  // what's the right threshhold here?
       double startBeat = 0;
       double channel = 0;
 //      double instrument = map(containedPixels.size(), minimumBlobSize, 20000, 0, 127); 
-      double pitch = pitchSet[floor(centerOfMass.x / 128)][floor(centerOfMass.y / 96)];
-      double dynamic = min(map(boundBoxArea,0,480*480, 40,127),127);  //map(velocity.magSq(), 0, 320, 80, 127);  
-      double duration = 4;
+      double pitch = pitchSet[floor(centerOfMass.x / (camWidth/5))][floor(centerOfMass.y / (camWidth/4))];
+      double dynamic = min(map(boundBoxArea,0,480*480, 0,127),127);  //map(velocity.magSq(), 0, 320, 80, 127);  
+      double duration = int(velocity.mag());
       double articulation = boundBoxRatio; // 0.8;
       double pan = map(centerOfMass.x,0,camWidth,0,127);
       cipher.playNote(startBeat,
@@ -84,6 +86,13 @@ class Person {
     
     // update bounding box
     // update height
+  }
+  
+  int minz = 0;
+  
+  void setHighestPoint(int minZ,PVector highpoint) {
+    this.highestPoint = highpoint;
+    this.minz = minZ;
   }
   
   void setBoundingBox(int minX, int minY, int maxX, int maxY) {
