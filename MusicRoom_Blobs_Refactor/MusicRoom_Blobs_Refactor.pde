@@ -82,8 +82,8 @@ void draw() {
     ellipse(person.centerOfMass.x, person.centerOfMass.y, 10, 10);
     if (person.hasFlag) { 
       textSize(32);
-      //text(person.bbAreaAvg+" : "+person.heightAvg, person.centerOfMass.x, person.centerOfMass.y);
-      text(person.centerChangeTimer, person.centerOfMass.x, person.centerOfMass.y);
+      text(round(person.bbAreaAvg)+" : "+round(person.heightAvg), person.centerOfMass.x, person.centerOfMass.y);
+      //text(person.centerChangeTimer, person.centerOfMass.x, person.centerOfMass.y);
     }
   }
 }
@@ -118,7 +118,7 @@ void updatePeople() {
   blobMinY = new int[numBlobs];
   blobMaxX = new int[numBlobs];
   blobMaxY = new int[numBlobs];
-    minimumZPerBlob = new int[numBlobs];
+  minimumZPerBlob = new int[numBlobs];
   minimumZLocation = new PVector[numBlobs];
   
   // initialize those lists
@@ -161,7 +161,7 @@ void updatePeople() {
       int z = round(depthPoints[i].z);
       if (z>10 && z < minimumZPerBlob[blobIndex[i]]) {
         minimumZPerBlob[blobIndex[i]] = z;
-                minimumZLocation[blobIndex[i]] = new PVector(x, y,z);
+        minimumZLocation[blobIndex[i]] = new PVector(x, y,z);
       }
 //      minimumZPerBlob[blobIndex[i]] = min(minimumZPerBlob[blobIndex[i]], round(depthPoints[i].z));
 //      if(minimumZPerBlob[blobIndex[i]] == round(depthPoints[i].z)) {

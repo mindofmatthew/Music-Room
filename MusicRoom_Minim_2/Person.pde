@@ -129,11 +129,11 @@ class Person {
     updateFlag = true;
   }
   
-  int minz = 0;
+  int minZ = 0;
   
   void setHighestPoint(int minZ,PVector highpoint) {
     this.highestPoint = highpoint;
-    this.minz = minZ;
+    this.minZ = minZ;
   }
   
   void setBoundingBox(int minX, int minY, int maxX, int maxY) {
