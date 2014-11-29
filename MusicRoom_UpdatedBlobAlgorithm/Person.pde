@@ -176,7 +176,7 @@ class Person {
     image.loadPixels();
     
     for(PVector pixel : containedPixels) {
-      image.pixels[round(pixel.x) + round(pixel.y) * image.width] = color(128);
+      image.pixels[round(pixel.x) + round(pixel.y) * image.width] = personColor;
     }
     
     image.updatePixels();

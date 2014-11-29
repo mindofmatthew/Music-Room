@@ -1,13 +1,16 @@
 import SimpleOpenNI.*;
-
 import ddf.minim.*;
+import java.util.Stack;
 
 SimpleOpenNI  context;
 
 int camWidth = 640;
 int camHeight = 480;
 
+Stack<Integer> blobIndexStack;
 int[] blobIndex;  // all pixels in image, with a number indicating which blob they belong to (or 0 if not part of blob)
+PVector[] depthPoints;
+color[] irPixels;
 int numBlobs = 1;
 
 LinkedList<PVector>[] blobPixels;  // Array of linkedlists, each containing all pixels for a given blob
@@ -23,34 +26,26 @@ LinkedList<Person> keep_people;
 int minimumBlobSize = 5000;
 float maxDistance = 200;
 
-int[][] neighborLocation = {{0, -1}, {-1, 0}, {1, 0}, {0, 1}};
-
 Minim minim;
 AudioOutput out;
 
 void setup()
 {
   context = new SimpleOpenNI(this);
-
-
+  
   // enable depthMap generation 
   context.enableDepth();
-camWidth=context.depthWidth();
-camHeight = context.depthHeight();
-println("width = "+context.depthWidth()+ " height="+context.depthHeight());
+  camWidth=context.depthWidth();
+  camHeight = context.depthHeight();
+  println("width = "+context.depthWidth()+ " height="+context.depthHeight());
 
-    // enable ir generation
+  // enable ir generation
   context.enableIR();
   println("width = "+context.irWidth()+ " height="+context.irHeight());
   //context.alternativeViewPointDepthToImage();
   
-//  context.enableRGB();
-//println("width = "+context.rgbWidth()+ " height="+context.rgbHeight());
-  context.setMirror(true);
-  
   people = new LinkedList<Person>();
-    keep_people = new LinkedList<Person>();
-
+  keep_people = new LinkedList<Person>();
   
   minim = new Minim(this);
   out = minim.getLineOut();
@@ -85,7 +80,7 @@ void draw() {
     noFill();
     rect(person.minCorner.x, person.minCorner.y, person.maxCorner.x, person.maxCorner.y); // draw bounding box
     noStroke();
-    fill(person.personColor);
+    fill(255);
     ellipse(person.centerOfMass.x, person.centerOfMass.y, 10, 10);
     if (person.hasFlag) { 
       textSize(24);
@@ -97,22 +92,26 @@ void draw() {
 void updatePeople() {
   // Reset blobIndex array
   blobIndex = new int[camWidth * camHeight];
+  blobIndexStack = new Stack<Integer>();
   numBlobs = 1;
   
   context.update();
   
-  PVector[] depthPoints = context.depthMapRealWorld();
-    PImage irImage = context.irImage();
-        color[] irPixels = irImage.pixels;
+  depthPoints = context.depthMapRealWorld();
+  PImage irImage = context.irImage();
+  irPixels = irImage.pixels;
   
   for(int i = 0; i < depthPoints.length; i++) {
-    if((depthPoints[i].z > 0 && depthPoints[i].z < 3300) ||  // if depth is within min and max threshhold
-        (brightness(irPixels[i])>80))  {  // OR we don't know depth but we have a bright IR reflection (because IR reflecting flag screws with depth data)
-      int x = i % camWidth;
-      int y = i / camWidth;
+    if(isFreeBlobPixel(i)) {  // Check if this pixel is good
+      blobIndexStack.push(i);
       
-      setBlobIndex(x, y);   // mark this point as being inside a blob
-      
+      while(blobIndexStack.size() > 0) {
+        int newIndex = blobIndexStack.pop().intValue();
+        
+        setBlobIndex(newIndex, numBlobs);
+      }
+
+      numBlobs += 1;
     }
   }
   
@@ -222,36 +221,59 @@ void updatePeople() {
   keep_people = new LinkedList<Person>();
 }
 
-// Figure out what the blob index should be for a single pixel
-void setBlobIndex(int x, int y) {
-  int index = coordsToIndex(x, y);
+// Set the blob index for a single pixel
+void setBlobIndex(int index, int blobID) {
+  blobIndex[index] = blobID;
   
-  int min = numBlobs;
-  
-  int[] neighbors = {(y == 0) ? 0 : blobIndex[coordsToIndex(x, y - 1)],
-                     (x == 0) ? 0 : blobIndex[coordsToIndex(x - 1, y)],
-                     (x == camWidth - 1) ? 0 : blobIndex[coordsToIndex(x + 1, y)],
-                     (y == camHeight - 1) ? 0 : blobIndex[coordsToIndex(x, y + 1)]};
-  
-  for(int i = 0; i < neighbors.length; ++i) {
-    if(neighbors[i] != 0) {
-      min = min(min, neighbors[i]);
+  if(index % camWidth > 0) { //We have a left neighbor
+    if(isFreeBlobPixel(index - 1)) {
+      blobIndexStack.push(new Integer(index - 1));
     }
   }
-
-  blobIndex[index] = min;
   
-  if(min == numBlobs) {
-    numBlobs += 1;
+  if(index % camWidth < camWidth - 1) {
+    if(isFreeBlobPixel(index + 1)) {
+      blobIndexStack.push(new Integer(index + 1));
+    }
   }
   
-  for(int i = 0; i < neighbors.length; ++i) {
-    if(neighbors[i] > blobIndex[index]) {
-      setBlobIndex(x + neighborLocation[i][0], y + neighborLocation[i][1]);
+  if(index - camWidth >= 0) {
+    if(isFreeBlobPixel(index - camWidth)) {
+      blobIndexStack.push(new Integer(index - camWidth));
+    }
+  }
+  
+  if(index + camWidth < blobIndex.length) {
+    if(isFreeBlobPixel(index + camWidth)) {
+      blobIndexStack.push(new Integer(index + camWidth));
     }
   }
 }
 
-int coordsToIndex(int x, int y) {
-  return x + y * camWidth;
+boolean isFreeBlobPixel(int index) {
+  if(blobIndex[index] > 0) {
+    return false;
+  }
+  
+  if((depthPoints[index].z > 0 && depthPoints[index].z < 3300) || (brightness(irPixels[index])>80)) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+boolean isFreeBlobPixel(int destIndex, int sourceIndex) {
+  if(!isFreeBlobPixel(destIndex) {
+    return false;
+  }
+  
+  if(blobIndex[index] > 0) {
+    return false;
+  }
+  
+  if((depthPoints[index].z > 0 && depthPoints[index].z < 3300) || (brightness(irPixels[index])>80)) {
+    return true;
+  } else {
+    return false;
+  }
 }
