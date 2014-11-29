@@ -23,7 +23,7 @@ PVector[] minimumZLocation;  // 3d location of highest point in blob
 LinkedList<Person> people;
 LinkedList<Person> keep_people;
 
-int minimumBlobSize = 2500;
+int minimumBlobSize = 3000;
 float maxDistance = 50;
 
 Minim minim;
