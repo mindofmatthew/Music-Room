@@ -23,8 +23,8 @@ PVector[] minimumZLocation;  // 3d location of highest point in blob
 LinkedList<Person> people;
 LinkedList<Person> keep_people;
 
-int minimumBlobSize = 5000;
-float maxDistance = 200;
+int minimumBlobSize = 2500;
+float maxDistance = 50;
 
 Minim minim;
 AudioOutput out;
@@ -226,25 +226,25 @@ void setBlobIndex(int index, int blobID) {
   blobIndex[index] = blobID;
   
   if(index % camWidth > 0) { //We have a left neighbor
-    if(isFreeBlobPixel(index - 1)) {
+    if(isFreeBlobPixel(index - 1, index)) {
       blobIndexStack.push(new Integer(index - 1));
     }
   }
   
   if(index % camWidth < camWidth - 1) {
-    if(isFreeBlobPixel(index + 1)) {
+    if(isFreeBlobPixel(index + 1, index)) {
       blobIndexStack.push(new Integer(index + 1));
     }
   }
   
   if(index - camWidth >= 0) {
-    if(isFreeBlobPixel(index - camWidth)) {
+    if(isFreeBlobPixel(index - camWidth, index)) {
       blobIndexStack.push(new Integer(index - camWidth));
     }
   }
   
   if(index + camWidth < blobIndex.length) {
-    if(isFreeBlobPixel(index + camWidth)) {
+    if(isFreeBlobPixel(index + camWidth, index)) {
       blobIndexStack.push(new Integer(index + camWidth));
     }
   }
@@ -263,15 +263,11 @@ boolean isFreeBlobPixel(int index) {
 }
 
 boolean isFreeBlobPixel(int destIndex, int sourceIndex) {
-  if(!isFreeBlobPixel(destIndex) {
+  if(!isFreeBlobPixel(destIndex)) {
     return false;
   }
   
-  if(blobIndex[index] > 0) {
-    return false;
-  }
-  
-  if((depthPoints[index].z > 0 && depthPoints[index].z < 3300) || (brightness(irPixels[index])>80)) {
+  if(abs(depthPoints[sourceIndex].z - depthPoints[destIndex].z) < 200) {
     return true;
   } else {
     return false;
