@@ -25,6 +25,7 @@ LinkedList<Person> keep_people;
 
 int minimumBlobSize = 3000;
 float maxDistance = 50;
+int bgZThreshhold = 3100; // ignore floor by ignoring any pixels past this Z value
 
 Minim minim;
 AudioOutput out;
@@ -255,7 +256,7 @@ boolean isFreeBlobPixel(int index) {
     return false;
   }
   
-  if((depthPoints[index].z > 0 && depthPoints[index].z < 3300) || (brightness(irPixels[index])>80)) {
+  if((depthPoints[index].z > 0 && depthPoints[index].z < bgZThreshhold) || (brightness(irPixels[index])>80)) {
     return true;
   } else {
     return false;
