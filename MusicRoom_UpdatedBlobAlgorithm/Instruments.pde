@@ -1,7 +1,7 @@
 import ddf.minim.*;
 import ddf.minim.ugens.*;
 
-class Instrument_Sine {
+class Instrument {
   
   AudioOutput output;
   Oscil waveform;
@@ -9,22 +9,19 @@ class Instrument_Sine {
   
   boolean isPlaying = false;
   
-  Instrument_Sine(AudioOutput output) {
+  Instrument(AudioOutput output) {
     this.output = output;
     
     envelope = new ADSR();
-    waveform = new Oscil(440, 1, Waves.SINE);
+    waveform = new Oscil(440, 1, Waves.randomNHarms(5));
     waveform.patch(envelope);
+    envelope.patch(output);
     envelope.setParameters(1, 0.005, 0.005, 0.4, 0.6, 0, 0);
   }
   
   void noteOn(int pitch) {
     float frequency = pow(2, (pitch - 69) / 12.0) * 440;
     waveform.setFrequency(frequency);
-    
-    if(!isPlaying) {
-      envelope.patch(output);
-    }
     
     envelope.noteOn();
     

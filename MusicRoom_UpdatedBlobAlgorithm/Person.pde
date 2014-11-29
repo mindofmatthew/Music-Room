@@ -25,7 +25,7 @@ class Person {
   
   color personColor;
     
-  Instrument_Sine instrument;
+  Instrument instrument;
   
   Person(AudioOutput output, PVector centerOfMass, LinkedList<PVector> containedPixels, int hasFlag, int minX, int minY, int maxX, int maxY) {
     this.containedPixels = containedPixels;
@@ -39,7 +39,7 @@ class Person {
     this.boundBoxArea = xside*yside;
     this.boundBoxRatio = xside/yside;
     
-    instrument = new Instrument_Sine(output);
+    instrument = new Instrument(output);
     
     colorMode(HSB);
     personColor = color(round(random(255)), 255, 255);
@@ -50,7 +50,7 @@ class Person {
   }
   
   void playNote() {
-    playNoteDirection();
+    playNotePosition();
   }
   
   // Position-based note triggering
@@ -63,14 +63,14 @@ class Person {
   void playNotePosition() {
     int pitch = pitchSet[floor(centerOfMass.x / (camWidth / 5))][floor(centerOfMass.y / (camHeight / 4))];
     
-    /*if(minZ < 1300) {
+    if(minZ < 1300) {
       pitch += 7;
     } else if(minZ > 1900) {
       pitch -= 5;
-    }*/
+    }
     
-    boolean onCondition = (velocity.magSq() > 10) || (boundBoxArea - lastBoundBoxArea > 2000);
-    boolean offCondition = millis() - timeOfAttack > 200;
+    boolean onCondition = (velocity.magSq() > 20) || (boundBoxArea - lastBoundBoxArea > 2000);
+    boolean offCondition = millis() - timeOfAttack > 500;
     
     if(onCondition && !currentNote) {
       instrument.noteOn(pitch);
