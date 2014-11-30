@@ -1,6 +1,7 @@
 import java.util.LinkedList;
 
 import ddf.minim.*;
+import themidibus.*;
 
 class Person {
   private LinkedList<PVector> containedPixels;
@@ -27,9 +28,13 @@ class Person {
   
   color personColor;
     
+  MidiBus midiOut;
+    
   Instrument instrument;
   
-  Person(AudioOutput output, PVector centerOfMass, LinkedList<PVector> containedPixels, int hasFlag, int minX, int minY, int maxX, int maxY) {
+  int channel;
+  
+  Person(AudioOutput output, MidiBus midiOut, PVector centerOfMass, LinkedList<PVector> containedPixels, int hasFlag, int minX, int minY, int maxX, int maxY) {
     this.containedPixels = containedPixels;
     this.centerOfMass = centerOfMass;
     this.hasFlag = hasFlag > 60;
@@ -41,14 +46,20 @@ class Person {
     this.boundBoxArea = xside*yside;
     this.boundBoxRatio = xside/yside;
     
-    instrument = new Instrument(output);
+    this.midiOut = midiOut;
+    
+    channel = globalChannel;
+    globalChannel = (globalChannel + 1) % 3;
+    
+    //instrument = new Instrument(output);
     
     colorMode(HSB);
     personColor = color(round(random(255)), 255, 180);
   }
   
   void destroy() {
-    instrument.destroy();
+    //instrument.destroy();
+    midiOut.sendNoteOff(channel, currentPitch, 127);
   }
   
   void playNote() {
@@ -57,6 +68,7 @@ class Person {
   
 
   boolean currentNote = false;
+  int currentPitch;
   int timeOfAttack = 0;
   
   void playNotePosition() {
@@ -73,13 +85,18 @@ class Person {
       freq = Frequency.ofMidiNote(pitch);
     }
     
-    boolean onCondition = (velocity.magSq() > 20) || (boundBoxArea - lastBoundBoxArea > 2000);
-    boolean offCondition = millis() - timeOfAttack > 500 && boundBoxArea < 40000;
+    //boolean onCondition = (velocity.magSq() > 20) || (boundBoxArea - lastBoundBoxArea > lastBoundBoxArea * 0.1);
+    boolean onCondition = (boundBoxArea - lastBoundBoxArea > lastBoundBoxArea * 0.1);
+    boolean offCondition = millis() - timeOfAttack > 500 && boundBoxArea < 30000;
     
-    instrument.setVolume(constrain(map(boundBoxArea, 15000, 100000, 0, 3), 0, 3));
+    //instrument.setVolume(constrain(map(boundBoxArea, 15000, 100000, 0, 3), 0, 3));
+    midiOut.sendControllerChange(channel, 7, round(constrain(map(boundBoxArea, 15000, 80000, 80, 127), 40, 127)));
     
     if(onCondition && !currentNote) {
-      instrument.noteOn(freq);
+      midiOut.sendNoteOff(channel, currentPitch, 127);
+      currentPitch = round(freq.asMidiNote());
+      midiOut.sendNoteOn(channel, currentPitch, 127);
+      //instrument.noteOn(freq);
       currentNote = true;
       
       println("new pitch: " + freq.asMidiNote());
@@ -91,8 +108,17 @@ class Person {
       
       timeOfAttack = millis();
     } else if(offCondition && currentNote) {
-      instrument.noteOff();
+      midiOut.sendNoteOff(channel, currentPitch, 127);
+      //instrument.noteOff();
       currentNote = false;
+    }
+    
+    if(currentNote) {
+      if(currentPitch != freq.asMidiNote()) {
+        midiOut.sendNoteOff(channel, currentPitch, 127);
+        currentPitch = round(freq.asMidiNote());
+        midiOut.sendNoteOn(channel, currentPitch, 127);
+      }
     }
   }
   
@@ -117,9 +143,15 @@ class Person {
       
       println("pitch change: " + currPitch);
       
+      midiOut.sendNoteOff(channel, currPitch, 127);
+      midiOut.sendControllerChange(channel, 7, floor(random(128)));
+      
       currPitch += pitchDirection * round(constrain(map(millis() - lastNoteTime, 200, 0, 1, 5), 1, 5));
       float currFrequency = pow(2, (currPitch - 69) / 12.0) * 440;
-      instrument.noteOn(Frequency.ofHertz(currFrequency));
+      //instrument.noteOn(Frequency.ofHertz(currFrequency));
+      
+      midiOut.sendNoteOn(channel, currPitch, 127);
+      
       lastCenter = centerOfMass;
       lastDisplacement = displacement;
       lastNoteTime = millis();

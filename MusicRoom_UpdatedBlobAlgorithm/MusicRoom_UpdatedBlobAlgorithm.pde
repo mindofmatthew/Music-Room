@@ -1,6 +1,7 @@
 import SimpleOpenNI.*;
 import ddf.minim.*;
 import java.util.Stack;
+import themidibus.*;
 
 SimpleOpenNI  context;
 
@@ -33,6 +34,10 @@ int overlapThreshold = 355;
 
 Minim minim;
 AudioOutput out;
+
+MidiBus midiOut;
+
+int globalChannel = 0;
 
   // Position-based note triggering
   
@@ -70,8 +75,11 @@ void setup()
   minim = new Minim(this);
   out = minim.getLineOut();
   
+  MidiBus.list();
+  midiOut = new MidiBus(this, -1, "Pd to Logic");
+  
   background(0);
- 
+  
   size(camWidth,camHeight);
   sectorSizeX = int(camWidth/notesX);
   sectorSizeY=int(camHeight/notesY);
@@ -251,7 +259,7 @@ void updatePeople() {
       
       if(closestPerson == null) {
 //        people.push(new Person(out, blobCenterOfMass[i], blobPixels[i], blobHasFlag[i], blobMinX[i], blobMinY[i], blobMaxX[i], blobMaxY[i]));
-        Person p = new Person(out, blobCenterOfMass[i], blobPixels[i], blobHasFlag[i], blobMinX[i], blobMinY[i], blobMaxX[i], blobMaxY[i]);
+        Person p = new Person(out, midiOut, blobCenterOfMass[i], blobPixels[i], blobHasFlag[i], blobMinX[i], blobMinY[i], blobMaxX[i], blobMaxY[i]);
         p.setHighestPoint(minimumZPerBlob[i],minimumZLocation[i]);
         people.push(p);
       } else {
