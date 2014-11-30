@@ -52,7 +52,7 @@ class Person {
   }
   
   void playNote() {
-    playNoteDirection();
+    playNotePosition();
   }
   
 
