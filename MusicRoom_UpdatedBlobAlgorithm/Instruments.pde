@@ -27,6 +27,13 @@ class Instrument {
     
     isPlaying = true;
   }
+  void noteOn(Frequency frequency) {
+     waveform.setFrequency(frequency);
+    
+    envelope.noteOn();
+    
+    isPlaying = true;   
+  }
   
   void noteOff() {
     envelope.noteOff();

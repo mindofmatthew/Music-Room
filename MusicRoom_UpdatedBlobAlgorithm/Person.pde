@@ -61,12 +61,16 @@ class Person {
   
   void playNotePosition() {
     // pitchSet is global in MusicRoom_UpdatedBlobAlgorithm
-    int pitch = pitchSet[floor(centerOfMass.x / (camWidth / notesX))][floor(centerOfMass.y / (camHeight / notesY))];
+    Frequency freq = freqSet[floor(centerOfMass.x / (camWidth / notesX))][floor(centerOfMass.y / (camHeight / notesY))];
     
     if(minZ < 1300) {
+      float pitch = freq.asMidiNote();
       pitch += 7;
-    } else if(minZ > 1900) {
+      freq = Frequency.ofMidiNote(pitch);
+    } else if(minZ > 2100) {
+      float pitch = freq.asMidiNote();
       pitch -= 5;
+      freq = Frequency.ofMidiNote(pitch);
     }
     
     boolean onCondition = (velocity.magSq() > 20) || (boundBoxArea - lastBoundBoxArea > 2000);
@@ -75,10 +79,10 @@ class Person {
     instrument.setVolume(constrain(map(boundBoxArea, 15000, 100000, 0, 3), 0, 3));
     
     if(onCondition && !currentNote) {
-      instrument.noteOn(pitch);
+      instrument.noteOn(freq);
       currentNote = true;
       
-      println("new pitch: " + pitch);
+      println("new pitch: " + freq.asMidiNote());
       
       /*if(bend != null) {
         bend.setEndAmp(frequency);
