@@ -53,15 +53,13 @@ class Person {
     playNotePosition();
   }
   
-  // Position-based note triggering
-  
-  int[][] pitchSet = {{48, 50, 52, 53},{55, 57, 59,60},{62,64,65,67},{69,71,72,74},{76, 79,81,83}};
-  
+
   boolean currentNote = false;
   int timeOfAttack = 0;
   
   void playNotePosition() {
-    int pitch = pitchSet[floor(centerOfMass.x / (camWidth / 5))][floor(centerOfMass.y / (camHeight / 4))];
+    // pitchSet is global in MusicRoom_UpdatedBlobAlgorithm
+    int pitch = pitchSet[floor(centerOfMass.x / (camWidth / notesX))][floor(centerOfMass.y / (camHeight / notesY))];
     
     if(minZ < 1300) {
       pitch += 7;
@@ -71,6 +69,8 @@ class Person {
     
     boolean onCondition = (velocity.magSq() > 20) || (boundBoxArea - lastBoundBoxArea > 2000);
     boolean offCondition = millis() - timeOfAttack > 500;
+    
+    instrument.setVolume(constrain(map(boundBoxArea, 15000, 100000, 0, 3), 0, 3));
     
     if(onCondition && !currentNote) {
       instrument.noteOn(pitch);

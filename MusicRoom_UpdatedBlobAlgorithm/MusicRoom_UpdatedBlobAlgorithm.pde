@@ -30,6 +30,15 @@ int bgZThreshhold = 3100; // ignore floor by ignoring any pixels past this Z val
 Minim minim;
 AudioOutput out;
 
+  // Position-based note triggering
+  
+  //int[][] pitchSet = {{48, 50, 52, 53},{55, 57, 59,60},{62,64,65,67},{69,71,72,74},{76, 79,81,83}};
+  //int[][] pitchSet = {{48, 50, 52, 55},{50, 52, 55,57},{52,55,57,60},{55,57,60,62},{57, 60,62,64}}; // pentatpnic, one step each way
+  int[][] pitchSet = {{48, 52, 57, 62},{50, 55, 60,64},{52,57,62,64},{55,60,64,69},{57, 62,67,72}}; // pentatonic, third on x axis
+  int notesX = pitchSet.length;
+  int notesY = pitchSet[0].length;
+  
+  
 void setup()
 {
   context = new SimpleOpenNI(this);
