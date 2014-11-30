@@ -37,10 +37,12 @@ AudioOutput out;
   
   //int[][] pitchSet = {{48, 50, 52, 53},{55, 57, 59,60},{62,64,65,67},{69,71,72,74},{76, 79,81,83}};
   //int[][] pitchSet = {{48, 50, 52, 55},{50, 52, 55,57},{52,55,57,60},{55,57,60,62},{57, 60,62,64}}; // pentatpnic, one step each way
-  int[][] pitchSet = {{48, 52, 57, 62},{50, 55, 60,64},{52,57,62,64},{55,60,64,69},{57, 62,67,72}}; // pentatonic, third on x axis
+  //int[][] pitchSet = {{48, 52, 57, 62},{50, 55, 60,64},{52,57,62,67},{55,60,64,69},{57, 62,67,72}}; // pentatonic, third on x axis
+  int[][] pitchSet = {{48, 52, 55},{52, 55, 59},{55,60,64},{59,62,65}}; // diatonic, up by 3rd each way
+ 
   int notesX = pitchSet.length;
   int notesY = pitchSet[0].length;
-  
+  int sectorSizeX, sectorSizeY;
   
 void setup()
 {
@@ -66,6 +68,8 @@ void setup()
   background(0);
  
   size(camWidth,camHeight);
+  sectorSizeX = int(camWidth/notesX);
+  sectorSizeY=int(camHeight/notesY);
   
   colorMode(HSB);
   rectMode(CORNERS);
@@ -83,7 +87,18 @@ void draw() {
   }
   
   image(personImage, 0, 0);
+
+  // draw boxes for notes
+  stroke(240,200,200);
+
+  for (int w =sectorSizeX; w<camWidth; w+=sectorSizeX) {
+    line(w,0,w,camHeight);
+  }
+  for (int h=sectorSizeY; h<camHeight; h+=sectorSizeY) {
+    line(0,h,camWidth,h);
+  }
   
+  // draw persons
   for(Person person : people) {
     person.playNote();
     
