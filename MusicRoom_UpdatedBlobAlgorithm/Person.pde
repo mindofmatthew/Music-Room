@@ -22,6 +22,8 @@ class Person {
   boolean updateFlag = true;
 
   boolean hasFlag = false; // Person has IR reflecting token/flag/armband/whatever it is.
+  PVector flagCenter = new PVector();
+  PVector flagVector = new PVector(); // points from cetner of mass to flag center
   
   color personColor;
     
@@ -42,7 +44,7 @@ class Person {
     instrument = new Instrument(output);
     
     colorMode(HSB);
-    personColor = color(round(random(255)), 255, 255);
+    personColor = color(round(random(255)), 255, 180);
   }
   
   void destroy() {
@@ -53,15 +55,13 @@ class Person {
     playNoteDirection();
   }
   
-  // Position-based note triggering
-  
-  int[][] pitchSet = {{48, 50, 52, 53},{55, 57, 59,60},{62,64,65,67},{69,71,72,74},{76, 79,81,83}};
-  
+
   boolean currentNote = false;
   int timeOfAttack = 0;
   
   void playNotePosition() {
-    int pitch = pitchSet[floor(centerOfMass.x / (camWidth / 5))][floor(centerOfMass.y / (camHeight / 4))];
+    // pitchSet is global in MusicRoom_UpdatedBlobAlgorithm
+    int pitch = pitchSet[floor(centerOfMass.x / (camWidth / notesX))][floor(centerOfMass.y / (camHeight / notesY))];
     
     if(minZ < 1300) {
       pitch += 7;
@@ -70,7 +70,9 @@ class Person {
     }
     
     boolean onCondition = (velocity.magSq() > 20) || (boundBoxArea - lastBoundBoxArea > 2000);
-    boolean offCondition = millis() - timeOfAttack > 500 && boundBoxArea > 40000;
+    boolean offCondition = millis() - timeOfAttack > 500;
+    
+    instrument.setVolume(constrain(map(boundBoxArea, 15000, 100000, 0, 3), 0, 3));
     
     if(onCondition && !currentNote) {
       instrument.noteOn(pitch);
@@ -148,8 +150,10 @@ class Person {
     this.boundBoxRatio = xside/yside;
   }
  
-  void setHasFlag(int hasFlag) {
+  void setHasFlag(int hasFlag, int x, int y) {
     this.hasFlag = (hasFlag>60);
+    this.flagCenter = new PVector(x, y);
+//    this.flagVector = PVector.sub(flagCenter,centerOfMass);
   }
   
   PImage drawPerson(PImage image) {

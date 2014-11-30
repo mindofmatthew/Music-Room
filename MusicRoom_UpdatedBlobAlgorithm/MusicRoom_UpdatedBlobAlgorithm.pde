@@ -15,7 +15,10 @@ int numBlobs = 1;
 
 LinkedList<PVector>[] blobPixels;  // Array of linkedlists, each containing all pixels for a given blob
 PVector[] blobCenterOfMass;    // All of vectors with the x,y of center of mass for each blob
-int[] blobHasFlag;     // true for each blob which contains IR reflector token/flag/marker
+int[] blobHasFlag;     // count of IR reflecting pixels -- for each blob which contains IR reflector token/flag/marker
+int[] blobFlagCtrX;  // center point of reflector for each blob (note: used as accumulator first)
+int[] blobFlagCtrY;
+
 int[] blobMinX;  int[] blobMinY;  int[] blobMaxX;  int[] blobMaxY;  // used to compute bounding box corners
 int[] minimumZPerBlob;  // highest point in blob
 PVector[] minimumZLocation;  // 3d location of highest point in blob
@@ -26,11 +29,21 @@ LinkedList<Person> keep_people;
 int minimumBlobSize = 3000;
 float maxDistance = 50;
 int bgZThreshhold = 3100; // ignore floor by ignoring any pixels past this Z value
-int minOverlapThreshold = 350;
 
 Minim minim;
 AudioOutput out;
 
+  // Position-based note triggering
+  
+  //int[][] pitchSet = {{48, 50, 52, 53},{55, 57, 59,60},{62,64,65,67},{69,71,72,74},{76, 79,81,83}};
+  //int[][] pitchSet = {{48, 50, 52, 55},{50, 52, 55,57},{52,55,57,60},{55,57,60,62},{57, 60,62,64}}; // pentatpnic, one step each way
+  //int[][] pitchSet = {{48, 52, 57, 62},{50, 55, 60,64},{52,57,62,67},{55,60,64,69},{57, 62,67,72}}; // pentatonic, third on x axis
+  int[][] pitchSet = {{48, 52, 55},{52, 55, 59},{55,60,64},{59,62,65}}; // diatonic, up by 3rd each way
+ 
+  int notesX = pitchSet.length;
+  int notesY = pitchSet[0].length;
+  int sectorSizeX, sectorSizeY;
+  
 void setup()
 {
   context = new SimpleOpenNI(this);
@@ -55,6 +68,8 @@ void setup()
   background(0);
  
   size(camWidth,camHeight);
+  sectorSizeX = int(camWidth/notesX);
+  sectorSizeY=int(camHeight/notesY);
   
   colorMode(HSB);
   rectMode(CORNERS);
@@ -62,6 +77,7 @@ void setup()
 
 void draw() {
   background(0);
+  
   updatePeople();
   
   PImage personImage = new PImage(camWidth, camHeight);
@@ -71,7 +87,18 @@ void draw() {
   }
   
   image(personImage, 0, 0);
+
+  // draw boxes for notes
+  stroke(240,200,200);
+
+  for (int w =sectorSizeX; w<camWidth; w+=sectorSizeX) {
+    line(w,0,w,camHeight);
+  }
+  for (int h=sectorSizeY; h<camHeight; h+=sectorSizeY) {
+    line(0,h,camWidth,h);
+  }
   
+  // draw persons
   for(Person person : people) {
     person.playNote();
     
@@ -85,8 +112,12 @@ void draw() {
     fill(255);
     ellipse(person.centerOfMass.x, person.centerOfMass.y, 10, 10);
     if (person.hasFlag) { 
-      textSize(24);
-      text(person.minZ+" : "+person.boundBoxArea, person.centerOfMass.x, person.centerOfMass.y);
+//      textSize(24);
+//      text(person.minZ+" : "+person.boundBoxArea, person.centerOfMass.x, person.centerOfMass.y);
+      fill(150,255,255);
+      ellipse(person.flagCenter.x, person.flagCenter.y,5,5);
+      stroke(255);
+      line(person.centerOfMass.x,person.centerOfMass.y,person.flagCenter.x,person.flagCenter.y);
     }
   }
 }
@@ -121,6 +152,8 @@ void updatePeople() {
   blobPixels = new LinkedList[numBlobs];
   blobCenterOfMass = new PVector[numBlobs];
   blobHasFlag = new int[numBlobs];
+  blobFlagCtrX = new int[numBlobs];
+  blobFlagCtrY = new int[numBlobs];
   blobMinX = new int[numBlobs];          // used to compute bounding box corners
   blobMinY = new int[numBlobs];
   blobMaxX = new int[numBlobs];
@@ -156,6 +189,8 @@ void updatePeople() {
       blobPixels[blobIndex[i]].push(new PVector(x, y, depthPoints[i].z));
       if (brightness(irPixels[i])>175) { // this pixel is probably an IR reflecting flag
         blobHasFlag[blobIndex[i]] += 1;
+        blobFlagCtrX[blobIndex[i]] += x;
+        blobFlagCtrY[blobIndex[i]] += y;
       }
       
       // sum x and y of all points, to computer center of mass
@@ -175,6 +210,10 @@ void updatePeople() {
   for(int i = 0; i < numBlobs; ++i) {
     blobCenterOfMass[i].x /= blobPixels[i].size();
     blobCenterOfMass[i].y /= blobPixels[i].size();
+    if (blobHasFlag[i] > 0) {
+        blobFlagCtrX[i] /= blobHasFlag[i];
+        blobFlagCtrY[i] /= blobHasFlag[i];
+    }
   }
   
   // Now, figure out which people are close to which blobs
@@ -205,7 +244,7 @@ void updatePeople() {
         closestPerson.setCenterOfMass(blobCenterOfMass[i]);
         closestPerson.setPixels(blobPixels[i]);
         closestPerson.setBoundingBox(blobMinX[i], blobMinY[i], blobMaxX[i], blobMaxY[i]);
-        closestPerson.setHasFlag(blobHasFlag[i]);
+        closestPerson.setHasFlag(blobHasFlag[i],blobFlagCtrX[i],blobFlagCtrY[i]);
         closestPerson.setHighestPoint(minimumZPerBlob[i],minimumZLocation[i]);
       }
     }
@@ -269,7 +308,7 @@ boolean isFreeBlobPixel(int destIndex, int sourceIndex) {
     return false;
   }
   
-  if(abs(depthPoints[sourceIndex].z - depthPoints[destIndex].z) < minOverlapThreshold) {
+  if(abs(depthPoints[sourceIndex].z - depthPoints[destIndex].z) < 200) {
     return true;
   } else {
     return false;
