@@ -74,7 +74,7 @@ class Person {
     }
     
     boolean onCondition = (velocity.magSq() > 20) || (boundBoxArea - lastBoundBoxArea > 2000);
-    boolean offCondition = millis() - timeOfAttack > 500;
+    boolean offCondition = millis() - timeOfAttack > 500 && boundBoxArea < 40000;
     
     instrument.setVolume(constrain(map(boundBoxArea, 15000, 100000, 0, 3), 0, 3));
     
