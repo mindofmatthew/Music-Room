@@ -119,7 +119,7 @@ class Person {
       
       currPitch += pitchDirection * round(constrain(map(millis() - lastNoteTime, 200, 0, 1, 5), 1, 5));
       float currFrequency = pow(2, (currPitch - 69) / 12.0) * 440;
-      instrument.noteOn(currFrequency);
+      instrument.noteOn(Frequency.ofHertz(currFrequency));
       lastCenter = centerOfMass;
       lastDisplacement = displacement;
       lastNoteTime = millis();
