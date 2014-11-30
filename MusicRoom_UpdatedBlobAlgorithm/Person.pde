@@ -22,6 +22,8 @@ class Person {
   boolean updateFlag = true;
 
   boolean hasFlag = false; // Person has IR reflecting token/flag/armband/whatever it is.
+  PVector flagCenter = new PVector();
+  PVector flagVector = new PVector(); // points from cetner of mass to flag center
   
   color personColor;
     
@@ -42,7 +44,7 @@ class Person {
     instrument = new Instrument(output);
     
     colorMode(HSB);
-    personColor = color(round(random(255)), 255, 255);
+    personColor = color(round(random(255)), 255, 180);
   }
   
   void destroy() {
@@ -145,8 +147,10 @@ class Person {
     this.boundBoxRatio = xside/yside;
   }
  
-  void setHasFlag(int hasFlag) {
+  void setHasFlag(int hasFlag, int x, int y) {
     this.hasFlag = (hasFlag>60);
+    this.flagCenter = new PVector(x, y);
+//    this.flagVector = PVector.sub(flagCenter,centerOfMass);
   }
   
   PImage drawPerson(PImage image) {

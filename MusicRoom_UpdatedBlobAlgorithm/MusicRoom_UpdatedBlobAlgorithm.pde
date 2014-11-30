@@ -15,7 +15,10 @@ int numBlobs = 1;
 
 LinkedList<PVector>[] blobPixels;  // Array of linkedlists, each containing all pixels for a given blob
 PVector[] blobCenterOfMass;    // All of vectors with the x,y of center of mass for each blob
-int[] blobHasFlag;     // true for each blob which contains IR reflector token/flag/marker
+int[] blobHasFlag;     // count of IR reflecting pixels -- for each blob which contains IR reflector token/flag/marker
+int[] blobFlagCtrX;  // center point of reflector for each blob (note: used as accumulator first)
+int[] blobFlagCtrY;
+
 int[] blobMinX;  int[] blobMinY;  int[] blobMaxX;  int[] blobMaxY;  // used to compute bounding box corners
 int[] minimumZPerBlob;  // highest point in blob
 PVector[] minimumZLocation;  // 3d location of highest point in blob
@@ -70,6 +73,7 @@ void setup()
 
 void draw() {
   background(0);
+  
   updatePeople();
   
   PImage personImage = new PImage(camWidth, camHeight);
@@ -93,8 +97,12 @@ void draw() {
     fill(255);
     ellipse(person.centerOfMass.x, person.centerOfMass.y, 10, 10);
     if (person.hasFlag) { 
-      textSize(24);
-      text(person.minZ+" : "+person.boundBoxArea, person.centerOfMass.x, person.centerOfMass.y);
+//      textSize(24);
+//      text(person.minZ+" : "+person.boundBoxArea, person.centerOfMass.x, person.centerOfMass.y);
+      fill(150,255,255);
+      ellipse(person.flagCenter.x, person.flagCenter.y,5,5);
+      stroke(255);
+      line(person.centerOfMass.x,person.centerOfMass.y,person.flagCenter.x,person.flagCenter.y);
     }
   }
 }
@@ -129,6 +137,8 @@ void updatePeople() {
   blobPixels = new LinkedList[numBlobs];
   blobCenterOfMass = new PVector[numBlobs];
   blobHasFlag = new int[numBlobs];
+  blobFlagCtrX = new int[numBlobs];
+  blobFlagCtrY = new int[numBlobs];
   blobMinX = new int[numBlobs];          // used to compute bounding box corners
   blobMinY = new int[numBlobs];
   blobMaxX = new int[numBlobs];
@@ -164,6 +174,8 @@ void updatePeople() {
       blobPixels[blobIndex[i]].push(new PVector(x, y, depthPoints[i].z));
       if (brightness(irPixels[i])>175) { // this pixel is probably an IR reflecting flag
         blobHasFlag[blobIndex[i]] += 1;
+        blobFlagCtrX[blobIndex[i]] += x;
+        blobFlagCtrY[blobIndex[i]] += y;
       }
       
       // sum x and y of all points, to computer center of mass
@@ -183,6 +195,10 @@ void updatePeople() {
   for(int i = 0; i < numBlobs; ++i) {
     blobCenterOfMass[i].x /= blobPixels[i].size();
     blobCenterOfMass[i].y /= blobPixels[i].size();
+    if (blobHasFlag[i] > 0) {
+        blobFlagCtrX[i] /= blobHasFlag[i];
+        blobFlagCtrY[i] /= blobHasFlag[i];
+    }
   }
   
   // Now, figure out which people are close to which blobs
@@ -213,7 +229,7 @@ void updatePeople() {
         closestPerson.setCenterOfMass(blobCenterOfMass[i]);
         closestPerson.setPixels(blobPixels[i]);
         closestPerson.setBoundingBox(blobMinX[i], blobMinY[i], blobMaxX[i], blobMaxY[i]);
-        closestPerson.setHasFlag(blobHasFlag[i]);
+        closestPerson.setHasFlag(blobHasFlag[i],blobFlagCtrX[i],blobFlagCtrY[i]);
         closestPerson.setHighestPoint(minimumZPerBlob[i],minimumZLocation[i]);
       }
     }
