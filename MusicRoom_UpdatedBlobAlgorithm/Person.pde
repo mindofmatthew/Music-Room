@@ -52,7 +52,7 @@ class Person {
   }
   
   void playNote() {
-    playNotePosition();
+    playNoteDirection();
   }
   
 
@@ -98,6 +98,7 @@ class Person {
   int pitchDirection = 1;
   PVector lastCenter = new PVector(0, 0);
   PVector lastDisplacement = new PVector(0, 0);
+  int lastNoteTime = 0;
   
   void playNoteDirection() {
     PVector displacement = new PVector();
@@ -112,10 +113,12 @@ class Person {
       
       println("pitch change: " + currPitch);
       
-      currPitch += pitchDirection;
-      instrument.noteOn(currPitch);
+      currPitch += pitchDirection * round(constrain(map(millis() - lastNoteTime, 200, 0, 1, 5), 1, 5));
+      float currFrequency = pow(2, (currPitch - 69) / 12.0) * 440;
+      instrument.noteOn(currFrequency);
       lastCenter = centerOfMass;
       lastDisplacement = displacement;
+      lastNoteTime = millis();
     }
   }
   
