@@ -19,8 +19,7 @@ class Instrument {
     envelope.setParameters(1, 0.005, 0.005, 0.4, 0.6, 0, 0);
   }
   
-  void noteOn(int pitch) {
-    float frequency = pow(2, (pitch - 69) / 12.0) * 440;
+  void noteOn(float frequency) {
     waveform.setFrequency(frequency);
     
     envelope.noteOn();
