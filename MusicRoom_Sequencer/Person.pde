@@ -24,7 +24,7 @@ class Person {
   PVector flagCenter = new PVector();
   PVector flagVector = new PVector(); // points from cetner of mass to flag center
 
-    color personColor;
+  color personColor;
 
   MidiBus midiOut;
 
@@ -57,103 +57,17 @@ class Person {
 
   void destroy() {
     //instrument.destroy();
-    midiOut.sendNoteOff(channel, currentPitch, 127);
+    //midiOut.sendNoteOff(channel, currentPitch, 127);
   }
-
-  void playNote() {
-    playNotePosition();
-  }
-
-
-  boolean currentNote = false;
-  int currentPitch;
-  int timeOfAttack = 0;
-
-  void playNotePosition() {
+  
+  Note playNote() {
     // pitchSet is global in MusicRoom_UpdatedBlobAlgorithm
     Frequency freq = freqSet[floor(centerOfMass.x / (camWidth / notesX))][floor(centerOfMass.y / (camHeight / notesY))];
-
-    if (minZ < 1300) {
-      float pitch = freq.asMidiNote();
-      pitch += 7;
-      freq = Frequency.ofMidiNote(pitch);
-    } else if (minZ > 2100) {
-      float pitch = freq.asMidiNote();
-      pitch -= 5;
-      freq = Frequency.ofMidiNote(pitch);
-    }
-
-    //boolean onCondition = (velocity.magSq() > 20) || (boundBoxArea - lastBoundBoxArea > lastBoundBoxArea * 0.1);
-    boolean onCondition = (boundBoxArea - lastBoundBoxArea > lastBoundBoxArea * 0.1);
-    boolean offCondition = millis() - timeOfAttack > 500 && boundBoxArea < 30000;
-
-    //instrument.setVolume(constrain(map(boundBoxArea, 15000, 100000, 0, 3), 0, 3));
-    midiOut.sendControllerChange(channel, 7, round(constrain(map(boundBoxArea, 15000, 80000, 80, 127), 40, 127)));
-
-    if (onCondition && !currentNote) {
-      midiOut.sendNoteOff(channel, currentPitch, 127);
-      currentPitch = round(freq.asMidiNote());
-      midiOut.sendNoteOn(channel, currentPitch, 127);
-      //instrument.noteOn(freq);
-      currentNote = true;
-
-      println("new pitch: " + freq.asMidiNote());
-
-      /*if(bend != null) {
-       bend.setEndAmp(frequency);
-       bend.activate();
-       }*/
-
-      timeOfAttack = millis();
-    } else if (offCondition && currentNote) {
-      midiOut.sendNoteOff(channel, currentPitch, 127);
-      //instrument.noteOff();
-      currentNote = false;
-    }
-
-    if (currentNote) {
-      if (currentPitch != freq.asMidiNote()) {
-        midiOut.sendNoteOff(channel, currentPitch, 127);
-        currentPitch = round(freq.asMidiNote());
-        midiOut.sendNoteOn(channel, currentPitch, 127);
-      }
-    }
-  }
-
-  // Direction/movement-based note triggering
-
-  int currPitch = 69;
-  int pitchDirection = 1;
-  PVector lastCenter = new PVector(0, 0);
-  PVector lastDisplacement = new PVector(0, 0);
-  int lastNoteTime = 0;
-
-  void playNoteDirection() {
-    PVector displacement = new PVector();
-    displacement = displacement.sub(centerOfMass, lastCenter);
-
-    if (displacement.magSq() > 250) {
-      float changeInAngle = displacement.angleBetween(displacement, lastDisplacement);
-
-      if (abs(changeInAngle) > 1.5) {
-        pitchDirection *= -1;
-      }
-
-      println("pitch change: " + currPitch);
-
-      midiOut.sendNoteOff(channel, currPitch, 127);
-      midiOut.sendControllerChange(channel, 7, floor(random(128)));
-
-      currPitch += pitchDirection * round(constrain(map(millis() - lastNoteTime, 200, 0, 1, 5), 1, 5));
-      float currFrequency = pow(2, (currPitch - 69) / 12.0) * 440;
-      //instrument.noteOn(Frequency.ofHertz(currFrequency));
-
-      midiOut.sendNoteOn(channel, currPitch, 127);
-
-      lastCenter = centerOfMass;
-      lastDisplacement = displacement;
-      lastNoteTime = millis();
-    }
+    
+    Note sentNote = new Note(1, round(freq.asMidiNote()), 127, round(map(boundBoxArea, 10000, 100000, 300, 2000)));
+    midiOut.sendNoteOn(sentNote);
+    
+    return sentNote;
   }
 
   void setCenterOfMass(PVector centerOfMass) {

@@ -2,6 +2,8 @@ import SimpleOpenNI.*;
 import java.util.Stack;
 import ddf.minim.ugens.Frequency;
 import themidibus.*;
+import java.util.Timer;
+import java.util.TimerTask;
 
 SimpleOpenNI  context;
 
@@ -37,6 +39,8 @@ int bgZThreshhold = 3100; // ignore floor by ignoring any pixels past this Z val
 int overlapThreshold = 355;
 
 MidiBus midiOut;
+
+Timer timer;
 
 int globalChannel = 0;
 
@@ -76,7 +80,7 @@ void setup()
   people = new LinkedList<Person>();
   keep_people = new LinkedList<Person>();
 
-  MidiBus.list();
+  //MidiBus.list();
   midiOut = new MidiBus(this, -1, "Pd to Logic");
 
   background(0);
@@ -84,17 +88,43 @@ void setup()
   size(camWidth, camHeight);
   sectorSizeX = int(camWidth/notesX);
   sectorSizeY=int(camHeight/notesY);
-
+  
   for (int x=0; x<notesX; x++) {
     for (int y=0; y<notesY; y++) {
-      freqSet[x][y] = Frequency.ofPitch(noteSet[x][y]);
-      //       pitchSet[x][y] = int(freqSet[x][y].asMidiNote());
-      println(noteSet[x][y] +" = "+ freqSet[x][y]);//+" = "+pitchSet[x][y]);
+       freqSet[x][y] = Frequency.ofPitch(noteSet[x][y]);
+       println(noteSet[x][y] +" = "+ freqSet[x][y]);//+" = "+pitchSet[x][y]);
     }
   }
-
+  
   colorMode(HSB);
   rectMode(CORNERS);
+  
+  timer = new Timer();
+  timer.schedule(new PlayBeat(), 3000);
+}
+
+class PlayBeat extends TimerTask {
+  public void run() {
+    if(people.size() > 0) {
+      Note sentNote = people.getFirst().playNote();
+      timer.schedule(new WaitBeat(sentNote), sentNote.ticks() - 20);
+    } else {
+      timer.schedule(new PlayBeat(), 1000);
+    }
+  }
+}
+
+class WaitBeat extends TimerTask {
+  Note sentNote;
+  
+  public WaitBeat(Note sentNote) {
+    this.sentNote = sentNote;
+  }
+  
+  public void run() {
+    midiOut.sendNoteOff(sentNote);
+    timer.schedule(new PlayBeat(), 20);
+  }
 }
 
 void draw() {
@@ -122,8 +152,6 @@ void draw() {
 
   // draw persons
   for (Person person : people) {
-    person.playNote();
-
     stroke(255);
     PVector offset = new PVector();
     offset = offset.sub(person.centerOfMass, person.velocity);
