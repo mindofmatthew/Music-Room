@@ -69,7 +69,7 @@ class Person {
     Frequency freq = freqSet[floor(centerOfMass.x / (camWidth / notesX))][floor(centerOfMass.y / (camHeight / notesY))];
     int duration = round(map(boundBoxSides.x,20,600,shortestNote,longestNote)); //round(map(boundBoxArea, 10000, 100000, 300, 2000));
     int dynamic = min(round(map(minZ,3100,500,0,127)),127);
-    int numNotes = min(round(map(boundBoxSides.y,20,400,1,5)),5);
+    int numNotes = 1;//min(round(map(boundBoxSides.y,20,400,1,5)),5);
 
     Note[] notes = new Note[numNotes];
     for (int i=0; i<numNotes; i++) {

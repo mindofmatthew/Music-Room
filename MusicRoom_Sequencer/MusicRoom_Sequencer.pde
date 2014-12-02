@@ -4,6 +4,7 @@ import ddf.minim.ugens.Frequency;
 import themidibus.*;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.LinkedHashMap;
 
 SimpleOpenNI  context;
 
@@ -30,8 +31,8 @@ int[] blobMaxY;  // used to compute bounding box corners
 int[] minimumZPerBlob;  // highest point in blob
 PVector[] minimumZLocation;  // 3d location of highest point in blob
 
-LinkedList<Person> people;
-LinkedList<Person> keep_people;
+LinkedHashMap<Integer,Person> people;
+LinkedHashMap<Integer,Person> keep_people;
 
 int minimumBlobSize = 3000;
 float maxDistance = 50;
@@ -78,8 +79,8 @@ void setup()
   println("width = "+context.irWidth()+ " height="+context.irHeight());
   //context.alternativeViewPointDepthToImage();
 
-  people = new LinkedList<Person>();
-  keep_people = new LinkedList<Person>();
+  people = new LinkedHashMap<Integer,Person>();
+  keep_people = new LinkedHashMap<Integer,Person>();
 
   //MidiBus.list();
   midiOut = new MidiBus(this, -1, "Pd to Logic");
@@ -108,8 +109,11 @@ class PlayBeat extends TimerTask {
     if(people.size() > 0) {
       personIndex = personIndex % people.size();
       Note[] sentNotes = people.get(personIndex).playNote();
+      int numNotes = sentNotes.length;
+      for (int i = 0; i<numNotes; i++) {
       midiOut.sendNoteOn(sentNotes[0]);
       timer.schedule(new WaitBeat(sentNotes[0]), sentNotes[0].ticks() - 20);
+      }
       personIndex += 1;
     }
   }
@@ -135,7 +139,7 @@ void draw() {
 
   PImage personImage = new PImage(camWidth, camHeight);
 
-  for (Person person : people) {
+  for (Person person : people.values()) {
     personImage = person.drawPerson(personImage);
   }
 
@@ -152,7 +156,7 @@ void draw() {
   }
 
   // draw persons
-  for (Person person : people) {
+  for (Person person : people.values()) {
     stroke(255);
     PVector offset = new PVector();
     offset = offset.sub(person.centerOfMass, person.velocity);
@@ -277,7 +281,7 @@ void updatePeople() {
   }
 
   // Now, figure out which people are close to which blobs
-  for (Person person : people) {
+  for (Person person : people.values()) {
     person.updateFlag = false;
   }
   
@@ -289,7 +293,7 @@ void updatePeople() {
       Person closestPerson = null;
       float distance = 1000000;
 
-      for (Person person : people) {
+      for (Person person : people.values()) {
         float newDistance = blobCenterOfMass[i].dist(person.centerOfMass);
 
         if (newDistance < distance && newDistance < maxDistance) {
@@ -303,7 +307,9 @@ void updatePeople() {
         Person p = new Person(midiOut, blobCenterOfMass[i], blobPixels[i], blobHasFlag[i], blobMinX[i], blobMinY[i], blobMaxX[i], blobMaxY[i]);
         p.setHasFlag(blobHasFlag[i], blobFlagCtrX[i], blobFlagCtrY[i]);
         p.setHighestPoint(minimumZPerBlob[i], minimumZLocation[i]);
-        people.add(p);
+        
+        // TODO: this doesn't account for collisions -- two people at same x, second will overwrite the first. hope that x's never line up exactly.
+        people.put(int(p.centerOfMass.x),p);
       } else {
         closestPerson.setCenterOfMass(blobCenterOfMass[i]);
         closestPerson.setPixels(blobPixels[i]);
@@ -316,9 +322,9 @@ void updatePeople() {
   
   // remove people who no longer exist, by making copy of list with only people who still exist
   int tempPersonIndex = 0;
-  for (Person person : people) { 
+  for (Person person : people.values()) { 
     if (person.updateFlag) {
-      keep_people.add(person);
+      keep_people.put(int(person.centerOfMass.x),person);
       tempPersonIndex += 1;
     } else {
       person.destroy();
@@ -328,7 +334,7 @@ void updatePeople() {
     }
   }  
   people = keep_people;
-  keep_people = new LinkedList<Person>();
+  keep_people = new LinkedHashMap<Integer,Person>();
   
   if((oldNumberOfPeople == 0) && (people.size() > 0)) {
     personIndex = 0;
