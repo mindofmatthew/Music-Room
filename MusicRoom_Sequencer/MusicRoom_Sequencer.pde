@@ -41,6 +41,7 @@ int overlapThreshold = 355;
 MidiBus midiOut;
 
 Timer timer;
+int personIndex = 0;
 
 int globalChannel = 0;
 
@@ -100,16 +101,15 @@ void setup()
   rectMode(CORNERS);
   
   timer = new Timer();
-  timer.schedule(new PlayBeat(), 3000);
 }
 
 class PlayBeat extends TimerTask {
   public void run() {
     if(people.size() > 0) {
-      Note sentNote = people.getFirst().playNote();
+      personIndex = personIndex % people.size();
+      Note sentNote = people.get(personIndex).playNote();
       timer.schedule(new WaitBeat(sentNote), sentNote.ticks() - 20);
-    } else {
-      timer.schedule(new PlayBeat(), 1000);
+      personIndex += 1;
     }
   }
 }
@@ -279,6 +279,9 @@ void updatePeople() {
   for (Person person : people) {
     person.updateFlag = false;
   }
+  
+  // Keep track of how many people we're starting with
+  int oldNumberOfPeople = people.size();
 
   for (int i = 0; i < numBlobs; ++i) {
     if (blobPixels[i].size() > minimumBlobSize) {
@@ -299,7 +302,7 @@ void updatePeople() {
         Person p = new Person(midiOut, blobCenterOfMass[i], blobPixels[i], blobHasFlag[i], blobMinX[i], blobMinY[i], blobMaxX[i], blobMaxY[i]);
         p.setHasFlag(blobHasFlag[i], blobFlagCtrX[i], blobFlagCtrY[i]);
         p.setHighestPoint(minimumZPerBlob[i], minimumZLocation[i]);
-        people.push(p);
+        people.add(p);
       } else {
         closestPerson.setCenterOfMass(blobCenterOfMass[i]);
         closestPerson.setPixels(blobPixels[i]);
@@ -309,17 +312,30 @@ void updatePeople() {
       }
     }
   }
-
+  
   // remove people who no longer exist, by making copy of list with only people who still exist
+  int tempPersonIndex = 0;
   for (Person person : people) { 
     if (person.updateFlag) {
-      keep_people.push(person);
+      keep_people.add(person);
+      tempPersonIndex += 1;
     } else {
       person.destroy();
+      if(personIndex > tempPersonIndex) {
+        personIndex -= 1;
+      }
     }
   }  
   people = keep_people;
   keep_people = new LinkedList<Person>();
+  
+  println(oldNumberOfPeople);
+  
+  if((oldNumberOfPeople == 0) && (people.size() > 0)) {
+    personIndex = 0;
+    timer.schedule(new PlayBeat(), 0);
+    println("first!");
+  }
 }
 
 // Set the blob index for a single pixel
