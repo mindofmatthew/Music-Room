@@ -60,14 +60,27 @@ class Person {
     //midiOut.sendNoteOff(channel, currentPitch, 127);
   }
   
-  Note playNote() {
+  int shortestNote = 200;
+  int longestNote = 4000;
+  
+  Note[] playNote() {
+    
     // pitchSet is global in MusicRoom_UpdatedBlobAlgorithm
     Frequency freq = freqSet[floor(centerOfMass.x / (camWidth / notesX))][floor(centerOfMass.y / (camHeight / notesY))];
+    int duration = round(map(boundBoxSides.x,20,600,shortestNote,longestNote)); //round(map(boundBoxArea, 10000, 100000, 300, 2000));
+    int dynamic = min(round(map(minZ,3100,500,0,127)),127);
+    int numNotes = min(round(map(boundBoxSides.y,20,400,1,5)),5);
+
+    Notes[] notes = new Notes[numNotes];
+    for (int i=0; i<numNotes; i++) {
+      float freqMultiplier = 1;
+      float freqHz = freq.asHz()*freqMultiplier;
+      freq.setAsHz(freqHz);
+      
+      notes[i] = new Note(1, round(freq.asMidiNote()), dynamic, duration); 
+    }
     
-    Note sentNote = new Note(1, round(freq.asMidiNote()), 127, round(map(boundBoxArea, 10000, 100000, 300, 2000)));
-    midiOut.sendNoteOn(sentNote);
-    
-    return sentNote;
+    return notes;
   }
 
   void setCenterOfMass(PVector centerOfMass) {
