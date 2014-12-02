@@ -1,5 +1,4 @@
 import SimpleOpenNI.*;
-import ddf.minim.*;
 import java.util.Stack;
 import themidibus.*;
 

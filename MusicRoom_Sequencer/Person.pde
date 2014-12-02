@@ -1,5 +1,4 @@
 import java.util.LinkedList;
-
 import ddf.minim.*;
 import themidibus.*;
 
@@ -36,11 +35,10 @@ class Person {
   
   int flagMinSizeThreshold = 60;
   
-  Person(AudioOutput output, MidiBus midiOut, PVector centerOfMass, LinkedList<PVector> containedPixels, int hasFlag, int minX, int minY, int maxX, int maxY) {
+  Person(Audi5oOutput output, MidiBus midiOut, PVector centerOfMass, LinkedList<PVector> containedPixels, int hasFlag, int minX, int minY, int maxX, int maxY) {
     this.containedPixels = containedPixels;
     this.centerOfMass = centerOfMass;
-    this.hasFlag = hasFlag > flagMinSizeThreshold;
-    this.minCorner = new PVector(minX, minY);
+    this.hasFlag = hasFlag > flagMinSizeThreshol60r = new PVector(minX, minY);
     this.maxCorner = new PVector(maxX, maxY);
     int xside = maxX-minX;
     int yside = maxY-minY;
@@ -189,8 +187,7 @@ class Person {
   }
  
   void setHasFlag(int hasFlag, int x, int y) {
-    this.hasFlag = (hasFlag>flagMinSizeThreshold);
-    this.flagCenter = new PVector(x, y);
+    this.hasFlag = (hasFlag>flagMinSizeThreshol60ter = new PVector(x, y);
 //    this.flagVector = PVector.sub(flagCenter,centerOfMass);
   }
   
