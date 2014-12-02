@@ -60,8 +60,8 @@ class Person {
     //midiOut.sendNoteOff(channel, currentPitch, 127);
   }
   
-  int shortestNote = 200;
-  int longestNote = 4000;
+  int shortestNote = 100;
+  int longestNote = 3000;
   
   Note[] playNote() {
     
@@ -71,12 +71,12 @@ class Person {
     int dynamic = min(round(map(minZ,3100,500,0,127)),127);
     int numNotes = min(round(map(boundBoxSides.y,20,400,1,5)),5);
 
-    Notes[] notes = new Notes[numNotes];
+    Note[] notes = new Note[numNotes];
     for (int i=0; i<numNotes; i++) {
-      float freqMultiplier = 1;
+      float freqMultiplier = (boundBoxSides.y<120)?1:2^(round(map(boundBoxSides.y,100,400,1,6))/12);
       float freqHz = freq.asHz()*freqMultiplier;
-      freq.setAsHz(freqHz);
-      
+      freq = Frequency.ofHertz(freqHz);
+      println(freqHz+" = "+round(freq.asMidiNote()));
       notes[i] = new Note(1, round(freq.asMidiNote()), dynamic, duration); 
     }
     
@@ -109,6 +109,8 @@ class Person {
     this.boundBoxSides = new PVector(xside, yside);
     this.boundBoxArea = xside*yside;
     this.boundBoxRatio = xside/yside;
+    
+ //   print(boundBoxSides.x + ", " + boundBoxSides.y);
   }
 
   void setHasFlag(int hasFlag, int x, int y) {

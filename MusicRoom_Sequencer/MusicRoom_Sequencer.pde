@@ -107,8 +107,9 @@ class PlayBeat extends TimerTask {
   public void run() {
     if(people.size() > 0) {
       personIndex = personIndex % people.size();
-      Note sentNote = people.get(personIndex).playNote();
-      timer.schedule(new WaitBeat(sentNote), sentNote.ticks() - 20);
+      Note[] sentNotes = people.get(personIndex).playNote();
+      midiOut.sendNoteOn(sentNotes[0]);
+      timer.schedule(new WaitBeat(sentNotes[0]), sentNotes[0].ticks() - 20);
       personIndex += 1;
     }
   }
@@ -328,8 +329,6 @@ void updatePeople() {
   }  
   people = keep_people;
   keep_people = new LinkedList<Person>();
-  
-  println(oldNumberOfPeople);
   
   if((oldNumberOfPeople == 0) && (people.size() > 0)) {
     personIndex = 0;
