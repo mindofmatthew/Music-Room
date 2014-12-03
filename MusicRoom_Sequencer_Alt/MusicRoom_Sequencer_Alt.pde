@@ -2,8 +2,6 @@ import SimpleOpenNI.*;
 import java.util.Stack;
 import ddf.minim.ugens.Frequency;
 import themidibus.*;
-import java.util.Timer;
-import java.util.TimerTask;
 
 SimpleOpenNI  context;
 
@@ -40,10 +38,9 @@ int overlapThreshold = 355;
 
 MidiBus midiOut;
 
-Timer timer;
-int personIndex = 0;
-
 int globalChannel = 0;
+
+int framesPerLoop = 20;
 
 // Position-based note triggering
 
@@ -99,40 +96,29 @@ void setup()
   
   colorMode(HSB);
   rectMode(CORNERS);
-  
-  timer = new Timer();
-}
-
-class PlayBeat extends TimerTask {
-  public void run() {
-    if(people.size() > 0) {
-      personIndex = personIndex % people.size();
-      Note[] sentNotes = people.get(personIndex).playNote();
-      midiOut.sendNoteOn(sentNotes[0]);
-      timer.schedule(new WaitBeat(sentNotes[0]), sentNotes[0].ticks() - 20);
-      personIndex += 1;
-    }
-  }
-}
-
-class WaitBeat extends TimerTask {
-  Note sentNote;
-  
-  public WaitBeat(Note sentNote) {
-    this.sentNote = sentNote;
-  }
-  
-  public void run() {
-    midiOut.sendNoteOff(sentNote);
-    timer.schedule(new PlayBeat(), 20);
-  }
 }
 
 void draw() {
   background(0);
 
   updatePeople();
-
+  
+  int loopBeat = frameCount % framesPerLoop;
+  float beatWidth = camWidth / (float) framesPerLoop;
+  float beatPosition = beatWidth * loopBeat;
+  
+  if(frameCount % (framesPerLoop / 2) == 0) {
+    midiOut.sendNoteOn(2, 41, 127);
+  } else if(frameCount % (framesPerLoop / 2) == 3) {
+    midiOut.sendNoteOff(2, 41, 127);
+  }
+  
+  for (Person person : people) {
+    if(person.centerOfMass.x >= beatPosition && person.centerOfMass.x < beatPosition + beatWidth) {
+      person.playNote();
+    }
+  }
+  
   PImage personImage = new PImage(camWidth, camHeight);
 
   for (Person person : people) {
@@ -315,25 +301,15 @@ void updatePeople() {
   }
   
   // remove people who no longer exist, by making copy of list with only people who still exist
-  int tempPersonIndex = 0;
   for (Person person : people) { 
     if (person.updateFlag) {
       keep_people.add(person);
-      tempPersonIndex += 1;
     } else {
       person.destroy();
-      if(personIndex > tempPersonIndex) {
-        personIndex -= 1;
-      }
     }
   }  
   people = keep_people;
   keep_people = new LinkedList<Person>();
-  
-  if((oldNumberOfPeople == 0) && (people.size() > 0)) {
-    personIndex = 0;
-    timer.schedule(new PlayBeat(), 0);
-  }
 }
 
 // Set the blob index for a single pixel
