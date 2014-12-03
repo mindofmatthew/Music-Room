@@ -21,7 +21,7 @@ class Person {
   float lastBoundBoxRatio = 0;
   float lastBoundBoxArea = 0;
   
-  boolean updateFlag = true;
+  int age = 0;
 
   boolean hasFlag = false; // Person has IR reflecting token/flag/armband/whatever it is.
   PVector flagCenter = new PVector();
@@ -51,8 +51,8 @@ class Person {
     
     this.midiOut = midiOut;
     
-    channel = globalChannel;
-    globalChannel = (globalChannel + 1) % maxChannels;
+    channel = getInstrumentChannel();
+    //globalChannel = (globalChannel + 1) % maxChannels;
     
     //instrument = new Instrument(output);
     
@@ -266,7 +266,7 @@ class Person {
   
   void setPixels(LinkedList<PVector> containedPixels) {
     this.containedPixels = containedPixels;
-    updateFlag = true;
+    age = 0;
   }
   
   void setHighestPoint(float minZ,PVector highpoint) {

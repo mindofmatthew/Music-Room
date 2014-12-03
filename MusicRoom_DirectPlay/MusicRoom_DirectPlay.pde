@@ -2,6 +2,7 @@ import ddf.minim.Minim;
 import SimpleOpenNI.*;
 import ddf.minim.*;
 import java.util.Stack;
+import java.util.LinkedList;
 import themidibus.*;
 
 SimpleOpenNI  context;
@@ -30,7 +31,7 @@ LinkedList<Person> people;
 LinkedList<Person> keep_people;
 
 int minimumBlobSize = 3000;
-float maxDistance = 50;
+float maxDistance = 150;
 int bgZThreshhold = 3100; // ignore floor by ignoring any pixels past this Z value
 int overlapThreshold = 355;
 
@@ -39,8 +40,9 @@ AudioOutput out;
 
 MidiBus midiOut;
 
-int globalChannel = 0;
-int maxChannels = 3;
+  int globalChannel = 0;
+  int maxChannels = 3;
+  LinkedList<Integer> availableChannels = new LinkedList<Integer>();
 
   // Position-based note triggering
   
@@ -97,7 +99,10 @@ void setup()
       
   colorMode(HSB);
   rectMode(CORNERS);
-
+  
+  for(int i = 0; i < maxChannels; ++i) {
+    availableChannels.add(new Integer(i));
+  }
 }
 
 void draw() {
@@ -125,7 +130,9 @@ void draw() {
   
   // draw persons
   for(Person person : people) {
-    person.playNote();
+    //if (person.hasFlag) {
+      person.playNote();
+    //}
     
     stroke(255);
     PVector offset = new PVector();
@@ -248,7 +255,7 @@ void updatePeople() {
   
   // Now, figure out which people are close to which blobs
   for(Person person : people) {
-    person.updateFlag = false;
+    person.age += 1;
   }
   
   for(int i = 0; i < numBlobs; ++i) {
@@ -257,7 +264,8 @@ void updatePeople() {
       float distance = 1000000;
       
       for(Person person : people) {
-        float newDistance = blobCenterOfMass[i].dist(person.centerOfMass);
+        
+        float newDistance = flattenVector(blobCenterOfMass[i]).dist(flattenVector(person.centerOfMass));
         
         if(newDistance < distance && newDistance < maxDistance) {
           distance = newDistance;
@@ -283,9 +291,13 @@ void updatePeople() {
   
   // remove people who no longer exist, by making copy of list with only people who still exist
   for(Person person : people) { 
-    if(person.updateFlag) {
+    if(person.age < 30) {
       keep_people.push(person);
     } else {
+      Integer channel = new Integer(person.channel);
+      if(!availableChannels.contains(channel)) {
+        availableChannels.add(channel);
+      }
       person.destroy();
     }
   }  
@@ -358,4 +370,17 @@ boolean isFreeBlobPixel(int destIndex, int sourceIndex) {
   // } else {
   //   return false;
   // }
+}
+
+PVector flattenVector(PVector vec) {
+  return new PVector(vec.x, vec.y);
+}
+
+int getInstrumentChannel() {
+  if(availableChannels.size() > 0) {
+    Integer newChannel = availableChannels.remove(floor(random(availableChannels.size())));
+    return newChannel.intValue();
+  } else {
+    return floor(random(maxChannels));
+  }
 }
