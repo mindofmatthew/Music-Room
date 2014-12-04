@@ -72,32 +72,77 @@ class Person {
   boolean currentNote = false;
   int currentPitch;
   int timeOfAttack = 0;
+  int startVelocity = 127;
+  int endVelocity = 127;
+  int dynamic = 127;
   
+  int mappingModel = 1;  // determine which mappings to use
   void playNotePosition() {
     // pitchSet is global in MusicRoom_UpdatedBlobAlgorithm
     Frequency freq = freqSet[floor(centerOfMass.x / (camWidth / notesX))][floor(centerOfMass.y / (camHeight / notesY))];
+    boolean onCondition=false;
+    boolean offCondition=false;
     
-    if(minZ < 1300) {
-      float pitch = freq.asMidiNote();
-      pitch += 7;
-      freq = Frequency.ofMidiNote(pitch);
-    } else if(minZ > 2100) {
-      float pitch = freq.asMidiNote();
-      pitch -= 5;
-      freq = Frequency.ofMidiNote(pitch);
-    }
+    switch (mappingModel) {
+// MAPPING MODEL 0
+      case 0:
+        // modify pitch based on height  
+        if(minZ < 1300) {
+          float pitch = freq.asMidiNote();
+          pitch += 7;
+          freq = Frequency.ofMidiNote(pitch);
+        } else if(minZ > 2100) {
+          float pitch = freq.asMidiNote();
+          pitch -= 5;
+          freq = Frequency.ofMidiNote(pitch);
+        }
+        
+        // trigger on increase of boundbox area
+        //boolean onCondition = (velocity.magSq() > 20) || (boundBoxArea - lastBoundBoxArea > lastBoundBoxArea * 0.1);
+        onCondition = (boundBoxArea - lastBoundBoxArea > lastBoundBoxArea * 0.1);
     
-    //boolean onCondition = (velocity.magSq() > 20) || (boundBoxArea - lastBoundBoxArea > lastBoundBoxArea * 0.1);
-    boolean onCondition = (boundBoxArea - lastBoundBoxArea > lastBoundBoxArea * 0.1);
-    boolean offCondition = millis() - timeOfAttack > 500 && boundBoxArea < 30000;
+        // turn off after half second or bound box area below 30000
+        offCondition = millis() - timeOfAttack > 500 && boundBoxArea < 30000;
+        
+        // change dynamic (volume) based on bounding box area)
+        //instrument.setVolume(constrain(map(boundBoxArea, 15000, 100000, 0, 3), 0, 3));
+        dynamic = round(constrain(map(boundBoxArea, 15000, 80000, 80, 127), 40, 127));
+        midiOut.sendControllerChange(channel, 7, dynamic);
+        
+        startVelocity = 127;
+        break;
+      
+      case 1:
+        // modify frequency based on y dimension
+        float freqMultiplier = (boundBoxSides.y<120)?1:2^(round(map(boundBoxSides.y,100,400,1,6))/12);
+        float freqHz = freq.asHz()*freqMultiplier;
+        freq = Frequency.ofHertz(freqHz);
+        
+        // modify velocity by x dimension (who knows if this will do anything)
+        startVelocity = min(round(map(boundBoxSides.x,20,600,5,127)),127);
+        endVelocity = startVelocity;
+        
+        // volume determined by highest point
+        dynamic = min(round(map(minZ,3100,500,0,127)),127);
+        midiOut.sendControllerChange(channel, 7, dynamic);
+        
+        // trigger on increase of boundbox area
+        //boolean onCondition = (velocity.magSq() > 20) || (boundBoxArea - lastBoundBoxArea > lastBoundBoxArea * 0.1);
+        onCondition = (boundBoxArea - lastBoundBoxArea > lastBoundBoxArea * 0.1);
     
-    //instrument.setVolume(constrain(map(boundBoxArea, 15000, 100000, 0, 3), 0, 3));
-    midiOut.sendControllerChange(channel, 7, round(constrain(map(boundBoxArea, 15000, 80000, 80, 127), 40, 127)));
+        // turn off after half second if bound box area below 30000 or velocity < 5
+        
+        offCondition = millis() - timeOfAttack > 500 && boundBoxArea < 30000;
+        
+      break;
+      
+      
+    } // end switch mappingModel
     
     if(onCondition && !currentNote) {
-      midiOut.sendNoteOff(channel, currentPitch, 127);
+      midiOut.sendNoteOff(channel, currentPitch, endVelocity);
       currentPitch = round(freq.asMidiNote());
-      midiOut.sendNoteOn(channel, currentPitch, 127);
+      midiOut.sendNoteOn(channel, currentPitch, startVelocity);
       //instrument.noteOn(freq);
       currentNote = true;
       
@@ -110,16 +155,16 @@ class Person {
       
       timeOfAttack = millis();
     } else if(offCondition && currentNote) {
-      midiOut.sendNoteOff(channel, currentPitch, 127);
+      midiOut.sendNoteOff(channel, currentPitch, endVelocity);
       //instrument.noteOff();
       currentNote = false;
     }
     
     if(currentNote) {
-      if(currentPitch != freq.asMidiNote()) {
-        midiOut.sendNoteOff(channel, currentPitch, 127);
+      if(currentPitch != freq.asMidiNote()) {  
+        midiOut.sendNoteOff(channel, currentPitch, endVelocity);
         currentPitch = round(freq.asMidiNote());
-        midiOut.sendNoteOn(channel, currentPitch, 127);
+        midiOut.sendNoteOn(channel, currentPitch, startVelocity);
       }
     }
   }
