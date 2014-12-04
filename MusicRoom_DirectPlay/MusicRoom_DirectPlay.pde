@@ -51,6 +51,8 @@ MidiBus midiOut;
   //int[][] pitchSet = {{48, 52, 57, 62},{50, 55, 60,64},{52,57,62,67},{55,60,64,69},{57, 62,67,72}}; // pentatonic, third on x axis
   //int[][] pitchSet = {{48, 52, 55},{52, 55, 59},{55,60,64},{59,62,65}}; // diatonic, up by 3rd each way
   String[][] noteSet = {{"C4", "E4", "G4"},{"D4", "F4", "A4"},{"E4","G4","B4"},{"F4","A4","C5"}}; // diatonic, up by 3rd yaxis,by 1 on xaxis
+// String[][] noteSet = {{"G3","B3","D4"},{"C4", "E4", "G4"},{"E4", "G4", "B4"},{"G4","B4","D5"},{"A4","C5","E5"}}; // diatonic, up by 3rd yaxis,by 3 on xaxis
+ //String[][] noteSet = {{"G3","B3","D4"},{"B3", "D4", "F4"},{"C4", "E4", "G4"},{"D4","F4","A4"}}; // diatonic, up by 3rd yaxis,varies on xaxis
 
   
   int notesX = noteSet.length;
