@@ -41,7 +41,7 @@ AudioOutput out;
 MidiBus midiOut;
 
   int globalChannel = 0;
-  int maxChannels = 3;
+  int maxChannels = 10;
   LinkedList<Integer> availableChannels = new LinkedList<Integer>();
 
   // Position-based note triggering
@@ -114,6 +114,7 @@ void draw() {
   
   for(Person person : people) {
     personImage = person.drawPerson(personImage);
+ 
   }
   
   image(personImage, 0, 0);
@@ -143,7 +144,7 @@ void draw() {
     noStroke();
     fill(255);
     textSize(24);
-    text(person.centerOfMass.z+" : "+person.boundBoxSides.y, person.centerOfMass.x, person.centerOfMass.y);
+    text(person.centerOfMass.z, person.centerOfMass.x, person.centerOfMass.y);
     ellipse(person.centerOfMass.x, person.centerOfMass.y, 10, 10);
     if (person.hasFlag) { 
 //      textSize(24);

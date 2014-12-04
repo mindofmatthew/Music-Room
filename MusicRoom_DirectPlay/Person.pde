@@ -142,8 +142,8 @@ class Person {
       break;
 // MAPPING MODEL 2      
       case 2:
-        // modify frequency based on y dimension
-        freqMultiplier = (boundBoxSides.y<200)?1.0:pow(2,(map(boundBoxSides.y,100,400,1,6))/12);
+        // modify frequency based on y dimension -- sweep up by chromatic semitones
+        freqMultiplier = (boundBoxSides.y<200)?1.0:pow(2,(map(boundBoxSides.y,200,400,1,6))/12);
         freqHz = freq.asHz()*freqMultiplier;
         freq = Frequency.ofHertz(freqHz);
         // modify velocity by x dimension (who knows if this will do anything)
@@ -153,6 +153,7 @@ class Person {
         // volume determined by highest point
         dynamic = min(round(map(minZ,3100,1400,0,127)),127);
         midiOut.sendControllerChange(channel, 7, dynamic);
+ //       midiOut.sendControllerChange(channel, 10, floor(map(centerOfMass.x, 0, camWidth, 0, 128)));
         
         println("ctr vel magSq="+int(velocity.magSq()*1000)/1000+" area="+boundBoxArea+" freq="+freq.asHz() +" by "+ freqMultiplier+"\t dynamic="+dynamic+" velocity="+startVelocity);
 
@@ -162,11 +163,12 @@ class Person {
     
         // turn off after half second if bound box area below 30000 and velocity < 5
         
+        // boundBoxSides.x < 150
         offCondition = millis() - timeOfAttack > 500 && boundBoxArea < 25000 && this.velocity.magSq()<10;
         
       break;      
       
-      // MAPPING MODEL 3      
+      // MAPPING MODEL 3       NOT COMPLETE 
       case 3:
         // modify frequency based on y dimension
         freqMultiplier = (centerOfMass.z<200)?1.0:pow(2,(map(boundBoxSides.y,100,400,1,6))/12);
