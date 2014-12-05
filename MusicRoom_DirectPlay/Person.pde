@@ -1,3 +1,16 @@
+/* ------------------------------------------------ *
+ * PlaySpace
+ * A musically activated space that responds to your movement.
+ *
+ * By Matthew Kaney and David Gochfeld
+ * 
+ * version 1.0  03 December 2014
+ *
+ * Requires a Kinect Controller and these libraries:
+ * SimpleOpenNI, Minim, TheMidiBus 
+ *
+ *--------------------------------------------------- */
+
 import java.util.LinkedList;
 
 import ddf.minim.*;
@@ -25,7 +38,7 @@ class Person {
 
   boolean hasFlag = false; // Person has IR reflecting token/flag/armband/whatever it is.
   PVector flagCenter = new PVector();
-  PVector flagVector = new PVector(); // points from cetner of mass to flag center
+  PVector flagVector = new PVector(); // points from center of mass to flag center
   
   color personColor;
     
@@ -52,9 +65,6 @@ class Person {
     this.midiOut = midiOut;
     
     channel = getInstrumentChannel();
-    //globalChannel = (globalChannel + 1) % maxChannels;
-    
-    //instrument = new Instrument(output);
     
     colorMode(HSB);
     personColor = color(round(random(255)), 255, 180);
@@ -80,7 +90,7 @@ class Person {
   int mappingModel = 2;  // determine which mappings to use
   
   void playNotePosition() {
-    // pitchSet is global in MusicRoom_UpdatedBlobAlgorithm
+    // pitchSet is global in main sketch file
     Frequency freq = freqSet[floor(centerOfMass.x / (camWidth / notesX))][floor(centerOfMass.y / (camHeight / notesY))];
     boolean onCondition=false;
     boolean offCondition=false;
@@ -135,8 +145,7 @@ class Person {
         onCondition = (velocity.magSq() > 10) || (boundBoxArea - lastBoundBoxArea > lastBoundBoxArea * 0.1) || (abs(minZ-lastMinZ)>150);
         //onCondition = (boundBoxArea - lastBoundBoxArea > lastBoundBoxArea * 0.1);
     
-        // turn off after half second if bound box area below 30000 and velocity < 5
-        
+        // turn off after half second if bound box area below 25000 and velocity < 10    
         offCondition = millis() - timeOfAttack > 500 && boundBoxArea < 25000 && this.velocity.magSq()<10;
         
       break;
@@ -153,22 +162,20 @@ class Person {
         // volume determined by highest point
         dynamic = min(round(map(minZ,3100,1400,0,127)),127);
         midiOut.sendControllerChange(channel, 7, dynamic);
- //       midiOut.sendControllerChange(channel, 10, floor(map(centerOfMass.x, 0, camWidth, 0, 128)));
+ //       midiOut.sendControllerChange(channel, 10, floor(map(centerOfMass.x, 0, camWidth, 0, 128)));  // this sets pan to follow person
         
         println("ctr vel magSq="+int(velocity.magSq()*1000)/1000+" area="+boundBoxArea+" freq="+freq.asHz() +" by "+ freqMultiplier+"\t dynamic="+dynamic+" velocity="+startVelocity);
 
-        // trigger on increase of boundbox area or movement or center of mass rises by 150
-        onCondition = (velocity.magSq() > 100) || (boundBoxArea - lastBoundBoxArea > lastBoundBoxArea * 0.1);// || abs(velocity.z)>150;
-        //onCondition = (boundBoxArea - lastBoundBoxArea > lastBoundBoxArea * 0.1);
+        // trigger on increase of boundbox area or movement or center of mass in any direction by > 10 pixels
+        onCondition = (velocity.magSq() > 100) || (boundBoxArea - lastBoundBoxArea > lastBoundBoxArea * 0.1);// || abs(velocity.z)>150;  (if center of mass rises > 150)
     
-        // turn off after half second if bound box area below 30000 and velocity < 5
+        // turn off after half second if bound box area below 30000 and velocity < 10
         
-        // boundBoxSides.x < 150
         offCondition = millis() - timeOfAttack > 500 && boundBoxArea < 25000 && this.velocity.magSq()<10;
         
       break;      
       
-      // MAPPING MODEL 3       NOT COMPLETE 
+      // MAPPING MODEL 3    (not tested) 
       case 3:
         // modify frequency based on y dimension
         freqMultiplier = (centerOfMass.z<200)?1.0:pow(2,(map(boundBoxSides.y,100,400,1,6))/12);
@@ -186,11 +193,9 @@ class Person {
 
         // trigger on increase of boundbox area or movement
         onCondition = (velocity.magSq() > 10) || (boundBoxArea - lastBoundBoxArea > lastBoundBoxArea * 0.1) || (abs(minZ-lastMinZ)>150);
-        //onCondition = (boundBoxArea - lastBoundBoxArea > lastBoundBoxArea * 0.1);
     
-        // turn off after half second if bound box area below 30000 and velocity < 5
-        
-        offCondition = millis() - timeOfAttack > 500 && boundBoxArea < 25000 && this.velocity.magSq()<10;
+        // turn off after half second if bound box x edge smaller than 150 and velocity < 10        
+        offCondition = millis() - timeOfAttack > 500 && boundBoxSides.x < 150 && this.velocity.magSq()<10;
         
       break;      
     } // end switch mappingModel

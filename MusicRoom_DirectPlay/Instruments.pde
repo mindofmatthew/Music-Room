@@ -1,3 +1,16 @@
+/* ------------------------------------------------ *
+ * PlaySpace
+ * A musically activated space that responds to your movement.
+ *
+ * By Matthew Kaney and David Gochfeld
+ * 
+ * version 1.0  03 December 2014
+ *
+ * Requires a Kinect Controller and these libraries:
+ * SimpleOpenNI, Minim, TheMidiBus 
+ *
+ *--------------------------------------------------- */
+
 import ddf.minim.*;
 import ddf.minim.ugens.*;
 

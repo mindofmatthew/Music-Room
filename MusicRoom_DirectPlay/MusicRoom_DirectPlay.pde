@@ -1,3 +1,16 @@
+/* ------------------------------------------------ *
+ * PlaySpace
+ * A musically activated space that responds to your movement.
+ *
+ * By Matthew Kaney and David Gochfeld
+ * 
+ * version 1.0  03 December 2014
+ *
+ * Requires a Kinect Controller and these libraries:
+ * SimpleOpenNI, Minim, TheMidiBus 
+ *
+ *--------------------------------------------------- */
+ 
 import ddf.minim.Minim;
 import SimpleOpenNI.*;
 import ddf.minim.*;
@@ -5,11 +18,13 @@ import java.util.Stack;
 import java.util.LinkedList;
 import themidibus.*;
 
+// For the Kinect
 SimpleOpenNI  context;
 
 int camWidth = 640;
 int camHeight = 480;
 
+// For identifying and tracking blobs
 Stack<Integer> blobIndexStack;
 int[] blobIndex;  // all pixels in image, with a number indicating which blob they belong to (or 0 if not part of blob)
 PVector[] depthPoints;
@@ -27,14 +42,16 @@ int[] blobMinX;  int[] blobMinY;  int[] blobMaxX;  int[] blobMaxY;  // used to c
 float[] minimumZPerBlob;  // highest point in blob
 PVector[] minimumZLocation;  // 3d location of highest point in blob
 
-LinkedList<Person> people;
-LinkedList<Person> keep_people;
-
 int minimumBlobSize = 3000;
 float maxDistance = 150;
 int bgZThreshhold = 3100; // ignore floor by ignoring any pixels past this Z value
 int overlapThreshold = 355;
 
+// Lists of all Persons
+LinkedList<Person> people;
+LinkedList<Person> keep_people;
+
+// For music confid
 Minim minim;
 AudioOutput out;
 
@@ -45,20 +62,16 @@ MidiBus midiOut;
   LinkedList<Integer> availableChannels = new LinkedList<Integer>();
 
   // Position-based note triggering
-  
-  //int[][] pitchSet = {{48, 50, 52, 53},{55, 57, 59,60},{62,64,65,67},{69,71,72,74},{76, 79,81,83}};
-  //int[][] pitchSet = {{48, 50, 52, 55},{50, 52, 55,57},{52,55,57,60},{55,57,60,62},{57, 60,62,64}}; // pentatpnic, one step each way
-  //int[][] pitchSet = {{48, 52, 57, 62},{50, 55, 60,64},{52,57,62,67},{55,60,64,69},{57, 62,67,72}}; // pentatonic, third on x axis
-  //int[][] pitchSet = {{48, 52, 55},{52, 55, 59},{55,60,64},{59,62,65}}; // diatonic, up by 3rd each way
-  String[][] noteSet = {{"C4", "E4", "G4"},{"D4", "F4", "A4"},{"E4","G4","B4"},{"F4","A4","C5"}}; // diatonic, up by 3rd yaxis,by 1 on xaxis
-// String[][] noteSet = {{"G3","B3","D4"},{"C4", "E4", "G4"},{"E4", "G4", "B4"},{"G4","B4","D5"},{"A4","C5","E5"}}; // diatonic, up by 3rd yaxis,by 3 on xaxis
- //String[][] noteSet = {{"G3","B3","D4"},{"B3", "D4", "F4"},{"C4", "E4", "G4"},{"D4","F4","A4"}}; // diatonic, up by 3rd yaxis,varies on xaxis
-
+  // The floor area is mapped into a grid where each cell represents a note which will play whenever a person occupying that cell triggers a note
+  // These set up a grid of 3x4 cells
+String[][] noteSet = {{"C4", "E4", "G4"},{"D4", "F4", "A4"},{"E4","G4","B4"},{"F4","A4","C5"}}; // diatonic, up by 3rd yaxis,by 2nd on xaxis
+// String[][] noteSet = {{"G3","B3","D4"},{"C4", "E4", "G4"},{"E4", "G4", "B4"},{"G4","B4","D5"},{"A4","C5","E5"}}; // 5x3 grid; diatonic, up by 3rd yaxis,by 3 on xaxis
+// String[][] noteSet = {{"G3","B3","D4"},{"B3", "D4", "F4"},{"C4", "E4", "G4"},{"D4","F4","A4"}}; // diatonic, up by 3rd yaxis,varies on xaxis
+// String[][] noteSet = {{"C4", "D4", "E4"},{"D4", "E4", "G4"},{"E4","G4","A4"},{"G4","A4","C5"}}; // major pentatonic, one step each way
   
   int notesX = noteSet.length;
   int notesY = noteSet[0].length;
-    Frequency[][] freqSet = new Frequency[notesX][notesY];
-    int[][] pitchSet = new int[notesX][notesY];
+  Frequency[][] freqSet = new Frequency[notesX][notesY];
   int sectorSizeX, sectorSizeY;
   
 void setup()
@@ -94,7 +107,6 @@ void setup()
   for (int x=0; x<notesX; x++) {
     for (int y=0; y<notesY; y++) {
        freqSet[x][y] = Frequency.ofPitch(noteSet[x][y]);
-//       pitchSet[x][y] = int(freqSet[x][y].asMidiNote());
        println(noteSet[x][y] +" = "+ freqSet[x][y]);//+" = "+pitchSet[x][y]);
     }
   }
@@ -133,7 +145,7 @@ void draw() {
   
   // draw persons
   for(Person person : people) {
-    //if (person.hasFlag) {
+    //if (person.hasFlag) {   // use this if participants have an IR reflective flag, and nonparticipants should be silent
       person.playNote();
     //}
     
@@ -148,9 +160,7 @@ void draw() {
     textSize(24);
     text(person.centerOfMass.z, person.centerOfMass.x, person.centerOfMass.y);
     ellipse(person.centerOfMass.x, person.centerOfMass.y, 10, 10);
-    if (person.hasFlag) { 
-//      textSize(24);
-//      text(person.minZ+" : "+person.boundBoxArea, person.centerOfMass.x, person.centerOfMass.y);
+    if (person.hasFlag) {  // draw flag, and draw vector from center of blob to center of flag
       fill(150,255,255);
       ellipse(person.flagCenter.x, person.flagCenter.y,5,5);
       stroke(255);
@@ -250,7 +260,7 @@ void updatePeople() {
     blobCenterOfMass[i].x /= blobPixels[i].size();
     blobCenterOfMass[i].y /= blobPixels[i].size();
     blobCenterOfMass[i].z /= blobPixels[i].size();
-    if (blobHasFlag[i] > 0) {
+    if (blobHasFlag[i] > 0) {  // calculate center of flag if there is one
         blobFlagCtrX[i] /= blobHasFlag[i];
         blobFlagCtrY[i] /= blobHasFlag[i];
     }
@@ -277,7 +287,6 @@ void updatePeople() {
       }
       
       if(closestPerson == null) {
-//        people.push(new Person(out, blobCenterOfMass[i], blobPixels[i], blobHasFlag[i], blobMinX[i], blobMinY[i], blobMaxX[i], blobMaxY[i]));
         Person p = new Person(out, midiOut, blobCenterOfMass[i], blobPixels[i], blobHasFlag[i], blobMinX[i], blobMinY[i], blobMaxX[i], blobMaxY[i]);
         p.setHasFlag(blobHasFlag[i],blobFlagCtrX[i],blobFlagCtrY[i]);
         p.setHighestPoint(minimumZPerBlob[i],minimumZLocation[i]);
@@ -362,7 +371,7 @@ boolean isFreeBlobPixel(int index) {
 boolean isFreeBlobPixel(int destIndex, int sourceIndex) {
   return isFreeBlobPixel(destIndex);
   
-  // disable remainder of this function
+  // disable remainder of this function; was used to avoid overlaps, but unnecessary
   
   // if(!isFreeBlobPixel(destIndex)) {
   //   return false;
