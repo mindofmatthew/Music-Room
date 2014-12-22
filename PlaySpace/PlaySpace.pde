@@ -64,11 +64,20 @@ MidiBus midiOut;
   // Position-based note triggering
   // The floor area is mapped into a grid where each cell represents a note which will play whenever a person occupying that cell triggers a note
   // These set up a grid of 3x4 cells
-String[][] noteSet = {{"C4", "E4", "G4"},{"D4", "F4", "A4"},{"E4","G4","B4"},{"F4","A4","C5"}}; // diatonic, up by 3rd yaxis,by 2nd on xaxis
+
+// This is a good one
+//String[][] noteSet = {{"C4", "E4", "G4"},{"D4", "F4", "A4"},{"E4","G4","B4"},{"F4","A4","C5"}}; // diatonic, up by 3rd yaxis,by 2nd on xaxis
+
+// others
 // String[][] noteSet = {{"G3","B3","D4"},{"C4", "E4", "G4"},{"E4", "G4", "B4"},{"G4","B4","D5"},{"A4","C5","E5"}}; // 5x3 grid; diatonic, up by 3rd yaxis,by 3 on xaxis
 // String[][] noteSet = {{"G3","B3","D4"},{"B3", "D4", "F4"},{"C4", "E4", "G4"},{"D4","F4","A4"}}; // diatonic, up by 3rd yaxis,varies on xaxis
 // String[][] noteSet = {{"C4", "D4", "E4"},{"D4", "E4", "G4"},{"E4","G4","A4"},{"G4","A4","C5"}}; // major pentatonic, one step each way
-  
+
+// flip so lowest note is at ymax, x0
+String[][] noteSet = {{"G4", "E4", "C4"},{"A4", "F4", "D4"},{"B4","G4","E4"},{"C5","A4","F4"}}; // diatonic, up by 3rd yaxis,by 2nd on xaxis
+// add something below octave
+//String[][] noteSet = {{"F4","D4","B3"},{"G4", "E4", "C4"},{"A4", "F4", "D4"},{"B4","G4","E4"},{"C5","A4","F4"}}; // diatonic, up by 3rd yaxis,by 2nd on xaxis
+
   int notesX = noteSet.length;
   int notesY = noteSet[0].length;
   Frequency[][] freqSet = new Frequency[notesX][notesY];

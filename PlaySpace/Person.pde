@@ -87,7 +87,7 @@ class Person {
   int endVelocity = 127;
   int dynamic = 127;
   
-  int mappingModel = 2;  // determine which mappings to use
+  int mappingModel = 3;  // determine which mappings to use
   
   void playNotePosition() {
     // pitchSet is global in main sketch file
@@ -178,24 +178,25 @@ class Person {
       // MAPPING MODEL 3    (not tested) 
       case 3:
         // modify frequency based on y dimension
-        freqMultiplier = (centerOfMass.z<200)?1.0:pow(2,(map(boundBoxSides.y,100,400,1,6))/12);
+        freqMultiplier = (boundBoxSides.y<200)?1.0:pow(2,(map(boundBoxSides.y,200,400,1,6))/12);
         freqHz = freq.asHz()*freqMultiplier;
         freq = Frequency.ofHertz(freqHz);
+        
         // modify velocity by x dimension (who knows if this will do anything)
         startVelocity = min(round(map(boundBoxSides.x,20,400,25,127)),127);
         endVelocity = startVelocity;
         
         // volume determined by highest point
-        dynamic = min(round(map(minZ,3100,1400,0,127)),127);
+        dynamic = 120; // min(round(map(minZ,3100,1400,80,127)),127);
         midiOut.sendControllerChange(channel, 7, dynamic);
         
         println("ctr vel magsq="+int(velocity.magSq()*1000)/3+" area="+boundBoxArea+" freq="+freq.asHz() +" by "+ freqMultiplier+"\t dynamic="+dynamic+" velocity="+startVelocity);
 
         // trigger on increase of boundbox area or movement
-        onCondition = (velocity.magSq() > 10) || (boundBoxArea - lastBoundBoxArea > lastBoundBoxArea * 0.1) || (abs(minZ-lastMinZ)>150);
+        onCondition = (velocity.magSq() > 100) || (boundBoxArea - lastBoundBoxArea > lastBoundBoxArea * 0.1);// || (abs(minZ-lastMinZ)>150);
     
         // turn off after half second if bound box x edge smaller than 150 and velocity < 10        
-        offCondition = millis() - timeOfAttack > 500 && boundBoxSides.x < 150 && this.velocity.magSq()<10;
+        offCondition = millis() - timeOfAttack > 1000 && boundBoxSides.x < 180 && this.velocity.magSq()<10;
         
       break;      
     } // end switch mappingModel
@@ -226,6 +227,7 @@ class Person {
         midiOut.sendNoteOff(channel, currentPitch, endVelocity);
         currentPitch = round(freq.asMidiNote());
         midiOut.sendNoteOn(channel, currentPitch, startVelocity);
+        timeOfAttack = millis();
       }
     }
   }
